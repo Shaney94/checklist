@@ -11,7 +11,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; frame-src https://turncal.com; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,6 +21,7 @@
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 .wrap{max-width:820px;margin:0 auto;padding:14px} .hidden{display:none!important}
 .hero{background:var(--hero);color:#fff;border-radius:18px;padding:22px;margin-bottom:14px} .hero h1{margin:0 0 6px;font-size:26px} .hero p{margin:0;color:#d1d5db;line-height:1.45}
+.calendar-embed{margin-top:14px} .calendar-embed iframe{display:block;width:100%;height:720px;border:0}
 .reminders{display:grid;font-size:14px;line-height:1.45}
 .reminder{grid-area:1/1;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .reminder.active{visibility:visible;opacity:1;pointer-events:auto}
@@ -100,6 +101,9 @@
         <button class="primary secondary" onclick="openFAQ()">Open FAQ</button>
       </article>
     </div>
+    <section class="section calendar-embed" aria-label="Cleaning calendar">
+      <iframe src="https://turncal.com/a/anniesland" title="TurnCal cleaning calendar" loading="lazy" referrerpolicy="no-referrer"></iframe>
+    </section>
   </main>
 
 
