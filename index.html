@@ -11,11 +11,20 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; frame-src https://turncal.com; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src https://turncal.com; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Turnli Cleaning Hub</title>
+<title>Turnly Cleaning Hub</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="application-name" content="Turnly">
+<meta name="apple-mobile-web-app-title" content="Turnly">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#123c30">
 <style>
 :root{--bg:#f8faf9;--card:#fff;--text:#142a24;--muted:#56665f;--border:#d5dfda;--accent:#087d3e;--accent2:#115b49;--soft:#e8f5ee;--hero:#123c30;--danger:#b42318}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
@@ -85,6 +94,10 @@
   .calendar-embed iframe{height:calc(100dvh - 100px);min-height:620px}
   #faqView,#checklistView{max-width:1000px;margin:0 auto}
 }
+dialog{width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--border);border-radius:18px;padding:22px;color:var(--text);background:var(--card)}
+dialog::backdrop{background:rgba(20,42,36,.45)}dialog h2{font-size:21px;margin:0 0 12px}dialog p{color:var(--muted);line-height:1.5}.dialog-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.dialog-actions>*{min-height:44px}.issue-types{border:0;padding:0;margin:16px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}.issue-types legend{font-weight:700;margin-bottom:10px}.issue-types label{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:12px;min-height:48px;padding:10px;font-size:14px}.issue-types input{width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)}
+[hidden]{display:none!important}.native-calendar-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 16px 0}.native-calendar-heading h2{font-size:20px;margin:0}.calendar-status{padding:0 16px;color:var(--muted);font-size:14px;line-height:1.5}.month-toolbar{display:flex;align-items:center;gap:8px;margin:16px}.month-toolbar h3{flex:1;text-align:center;font-size:18px;margin:0}.month-toolbar button{min-width:44px;min-height:44px;padding:8px}.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 12px}.calendar-weekdays{text-align:center;font-size:12px;color:var(--muted);padding:8px 0}.calendar-day{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:60px;padding:4px;border:1px solid transparent;border-radius:10px;font:inherit;font-size:15px;color:var(--text)}.has-clean{background:var(--soft);border-color:#81a996;cursor:pointer;font-weight:700}.is-today{border:2px solid var(--accent)}.day-label{font-size:10px;margin-top:4px}.calendar-list-heading{font-size:16px;margin:20px 16px 10px}#calendarBookings{display:grid;gap:8px;margin:0 16px 16px}.booking-button{width:100%;text-align:left;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--card);color:var(--text);font:inherit;cursor:pointer}.booking-button strong,.booking-button span{display:block}.booking-button span{font-size:14px;color:var(--muted);margin-top:5px}.calendar-empty{color:var(--muted);line-height:1.5;margin:0}#originalCalendar{border-top:1px solid var(--border);margin-top:16px}#originalCalendar summary{padding:16px;cursor:pointer;font-weight:600;font-size:14px;min-height:48px}@media(min-width:1100px){.calendar-day{min-height:75px}}@media(max-width:360px){.native-calendar-heading h2{font-size:17px}.month-toolbar{gap:4px;margin:12px}.month-toolbar h3{font-size:16px}.calendar-days,.calendar-weekdays{margin:0 8px;gap:2px}}
+.invite-customers{margin-left:auto;flex-shrink:0;font-size:13px;min-height:44px}#accountDialog form .primary{margin-top:16px}#accountDialog label{display:block}#accountDialog input{display:block}#accountDialog #changeEmail{margin-top:12px}button:disabled{opacity:.65;cursor:wait}@media(max-width:520px){.brand-header{flex-wrap:wrap;gap:8px}.brand-header h1{flex:1}.invite-customers{margin-left:auto;padding:9px 10px}.brand-header .hub-name{font-size:14px}}@media(max-width:380px){.invite-customers{margin-left:auto}.brand-header .brand-name{font-size:24px}.brand-header .hub-name{font-size:13px}}
 </style>
 </head>
 <body>
@@ -97,6 +110,7 @@
         <path d="M60 37V73C60 91 48 99 31 99C25 99 22 95 22 89V65C22 49 37 37 60 37Z" fill="url(#turnliDark)"/>
       </svg>
       <h1><span class="brand-name">turnli</span><span class="hub-name">Cleaning Hub</span></h1>
+      <button type="button" id="inviteCustomers" class="back invite-customers">Invite customers</button>
     </header>
     <section class="hero" aria-label="Cleaner reminder">
       <div class="reminder-toolbar">
@@ -125,7 +139,15 @@
       <button type="button" class="primary calendar-action" aria-live="polite" onclick="navigator.clipboard.writeText('https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics').then(() => { this.querySelector('[data-copy-label]').textContent = 'Copied!'; clearTimeout(this.copyResetTimer); this.copyResetTimer = setTimeout(() => { this.querySelector('[data-copy-label]').textContent = 'Copy iCal Link'; }, 2500); }).catch(() => alert('Unable to copy the iCal link. Please try again.'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg><span data-copy-label>Copy iCal Link</span></button>
     </nav>
     <section id="cleaningCalendar" class="section calendar-embed" tabindex="-1" aria-label="Cleaning calendar">
-      <iframe src="https://turncal.com/a/anniesland" title="TurnCal cleaning calendar" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      <div class="native-calendar-heading"><h2>Turnly Cleaning Calendar</h2><button type="button" class="back" id="refreshCalendar">Refresh</button></div>
+      <p id="calendarStatus" class="calendar-status" role="status">Loading booking dates…</p>
+      <div id="nativeCalendar" hidden>
+        <div class="month-toolbar"><button type="button" class="back" id="previousMonth" aria-label="Previous month">←</button><h3 id="calendarMonth" aria-live="polite"></h3><button type="button" class="back" id="nextMonth" aria-label="Next month">→</button><button type="button" class="back" id="calendarToday">Today</button></div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div id="calendarDays" class="calendar-days" aria-label="Dates in this month"></div>
+        <h3 class="calendar-list-heading">Cleans after checkout</h3><div id="calendarBookings"></div>
+      </div>
+      <details id="originalCalendar"><summary>Original booking calendar</summary><iframe src="https://turncal.com/a/anniesland" title="TurnCal cleaning calendar" loading="lazy" referrerpolicy="no-referrer"></iframe></details>
     </section>
   </main>
 
@@ -218,7 +240,7 @@
       <div class="bar"><div id="fill" class="fill"></div></div>
     </section>
 
-    <div class="meta">
+    <div class="meta" id="cleanDetails">
       <label class="field">Cleaner name<input id="cleaner" type="text" placeholder="Name"></label>
       <label class="field">Cleaning month
         <select id="month"><option value="">Choose month</option><option>September</option><option>December</option><option>March</option><option>June</option></select>
@@ -231,9 +253,8 @@
     <div id="sections"></div>
 
     <section class="report">
-      <h3 id="reportLabel">Issues / Maintenance / Stock Report</h3>
-      <p>Report damage, missing items, guest belongings, low stock, mould, leaks, unusual smells, appliance faults or anything requiring attention. Write “No issues” if everything is okay.</p>
-      <textarea aria-labelledby="reportLabel" id="report" placeholder="Write report here..."></textarea>
+      <button type="button" class="primary" onclick="openIssueReport()">Report an issue to host</button>
+      <p style="margin-top:10px">Choose an issue type, then review and send your message in WhatsApp. Attach photos there if helpful.</p>
     </section>
 
     <div class="actions">
@@ -242,6 +263,35 @@
     </div>
   </main>
 </div>
+<dialog id="accountDialog" aria-labelledby="accountTitle">
+  <h2 id="accountTitle">Invite a customer</h2>
+  <form id="signInForm"><p id="signInDescription">Sign in with your owner email. We’ll send you a code.</p><label class="field">Email address<input id="ownerEmail" name="email" type="email" autocomplete="email" required placeholder="you@email.com" maxlength="254"></label><button type="submit" class="primary">Send sign-in code</button></form>
+  <form id="verifyForm" hidden><p id="codeDescription"></p><label class="field">Email code<input id="emailCode" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit" class="primary">Continue</button><button type="button" class="back" id="changeEmail">Use another email / resend code</button></form>
+  <form id="inviteForm" hidden><label class="field">Email address<input id="customerEmail" name="email" type="email" autocomplete="off" required placeholder="customer@email.com" maxlength="254"></label><button type="submit" class="primary">Send invite</button></form>
+  <div id="accountSuccess" hidden><p></p></div>
+  <p id="accountMessage" role="status" aria-live="polite"></p>
+  <div class="dialog-actions"><button type="button" class="back" onclick="document.getElementById('accountDialog').close()">Close</button><button type="button" class="back" id="signOutButton" hidden>Sign out</button></div>
+</dialog>
+<dialog id="cleanDialog" aria-labelledby="cleanDialogTitle">
+  <h2 id="cleanDialogTitle">Scheduled turnover</h2><p id="cleanDetailsText"></p><p id="cleanTimingNote"></p>
+  <button type="button" class="primary" id="cantMakeButton">Can’t make this clean</button>
+  <div id="cantMakeConfirmation" hidden><h3 id="cantMakeTitle" tabindex="-1">Can’t make this clean?</h3><p>Please let your host know as soon as possible so they can arrange another cleaner.</p><a id="cleanWhatsApp" class="primary" target="_blank" rel="noopener noreferrer">Contact host on WhatsApp</a><p>Review the message and press Send in WhatsApp.</p></div>
+  <div class="dialog-actions"><button type="button" class="back" onclick="document.getElementById('cleanDialog').close()">Cancel</button></div>
+</dialog>
+<dialog id="issueDialog" aria-labelledby="issueTitle" aria-describedby="issueDescription">
+  <h2 id="issueTitle">Report an issue to host</h2>
+  <p id="issueDescription">Anniesland · <span id="issueCleanType"></span></p>
+  <fieldset class="issue-types"><legend>Choose an issue type</legend>
+    <label><input type="radio" name="issueType" value="Damage"> Damage</label>
+    <label><input type="radio" name="issueType" value="Missing item"> Missing item</label>
+    <label><input type="radio" name="issueType" value="Maintenance issue"> Maintenance issue</label>
+    <label><input type="radio" name="issueType" value="Stock/supplies"> Stock/supplies</label>
+    <label><input type="radio" name="issueType" value="Cleaning issue"> Cleaning issue</label>
+    <label><input type="radio" name="issueType" value="Other"> Other</label>
+  </fieldset>
+  <p>You can add details and photos in WhatsApp before pressing Send.</p>
+  <div class="dialog-actions"><a id="issueWhatsApp" class="primary hidden" target="_blank" rel="noopener noreferrer">Report via WhatsApp</a><button type="button" class="back" onclick="document.getElementById('issueDialog').close()">Cancel</button></div>
+</dialog>
 
 <script>
 const DEEP = [["Arrival, Inspection & Laundry", ["Open windows briefly to ventilate where safe. Close all windows before leaving.", "Check immediately for smoke, cannabis or unusual odours. Report any unusual smell before using fragrance.", "Take arrival photos: wide shot of kitchen, bathroom, living room, each used bedroom and any issues/damage.", "Check for damage or missing items, particularly TV, speakers, monitors, coffee machine, beds, lights and key appliances.", "Strip all used beds and collect used towels.", "Put dirty laundry in the IKEA bag under the bed and start the laundry.", "Report any guest belongings found."]], ["Kitchen", ["Empty bins, fit new bags and add bin fresh powder.", "Wash and put away all dishes. Dishwasher can be used.", "Degrease and sanitise worktops and splashback, including edges and corners.", "Degrease hob and clean around controls and edges.", "Clean microwave inside and outside, including handle and buttons.", "Clean and descale sink and taps as required. Polish dry.", "Clean inside and outside of kitchen cupboards.", "Wipe kettle exterior.", "Empty toaster crumb tray.", "Wipe bin cupboard if required."]], ["Fridge & Freezer", ["Remove leftover food unless clearly unopened and acceptable.", "Remove expired sauces and unsuitable/open food left by guests.", "Wipe fridge/freezer shelves and drawers.", "Remove crumbs and spills.", "Sanitise handles."]], ["Kitchen Restocking", ["Refill dish soap.", "Refill hand soap using 50/50 dilution.", "Put out 2 new kitchen sponges.", "Replace kitchen towels.", "Put out 1 kitchen roll.", "Restock 5 laundry pods.", "Restock 5 dishwasher tablets.", "Replenish salt, pepper and cooking oil only if empty.", "Tea: 2 of each flavoured tea + 4 regular teas."]], ["Coffee Machine", ["Clean machine exterior.", "Clean drip tray and surrounding counter.", "Refill coffee supplies as required in glass jar.", "Deep clean: descale using tablets according to machine instructions.", "Replace water filter if a replacement is available.", "Replace water and run a clean rinse cycle.", "Report any faults, leaks, warnings or unusual noises."]], ["Bathroom", ["Toilet: bleach and scrub bowl.", "Clean toilet seat, hinges, exterior and base.", "Remove hair from shower.", "Clean shower tiles.", "Clean and descale shower taps and shower head as required.", "Clean shower glass and leave streak-free.", "Lift shower plug and remove trapped hair.", "Clean visible dust from extractor fan.", "Remove any visible mould appropriately and report recurring/significant mould.", "Clean sink.", "Descale taps as required and polish.", "Wipe vanity fronts.", "Clean mirror.", "Hoover floor edges.", "Mop floor.", "Empty bin and replace bag."]], ["Bathroom Restocking", ["Refill hand soap.", "Refill body/hair wash by shower and sink.", "Put out clean hand towel.", "Ensure 2 toilet rolls are present."]], ["Bedroom — Repeat for Each Used Bedroom", ["Replace fitted sheet, pillowcases and duvet cover.", "Check bedding for stains, hair and odour.", "Make bed neatly.", "Dust surfaces.", "Dust visible skirting boards.", "Wipe door handles, light switches and wardrobe handles.", "Check under bed.", "Remove rubbish.", "Put forgotten guest belongings into designated storage and report them.", "Hoover thoroughly, including edges.", "Remove visible hair/lint.", "Tidy room and return items to their usual positions.", "Check nothing appears damaged or missing."]], ["Living Room, Hall & Whole Flat", ["Hoover all applicable floors.", "Mop all applicable hard floors.", "Dust throughout.", "Clean all skirting boards.", "Dust above doors.", "Dust tops of bookcases.", "Dust tops of kitchen cupboards.", "Dust boiler area.", "Dust visible radiator fronts.", "Wipe high-touch points throughout, including door handles, light switches, remotes and furniture handles.", "Remove hair/lint from sofa and upholstery.", "Spot-clean obvious marks.", "Remove excess clutter and return items to their usual positions.", "Check for forgotten guest belongings. Put into designated storage and report.", "Clean all windows inside and outside using the magnetic cleaner in the storage cupboard."]], ["Smell & Welcome Setup", ["Report any smoke, cannabis or unusual odour before attempting to mask it.", "Lightly Febreze where required. Do not use excessive fragrance.", "Check Glade plug-in beside radiator near front door.", "Replace Glade refill only when completely empty.", "Do not throw away empty Glade refills.", "Put 1 Irn-Bru can per guest beside the dining table/welcome sign."]], ["Final Check Before Leaving", ["No visible dust, dirt, stains or hair.", "No rubbish left behind.", "No forgotten guest belongings left unnoticed.", "Beds clean and neatly made.", "Towels correctly placed.", "Bathroom clean, dry and restocked.", "Kitchen clean and fully restocked.", "Fridge/freezer checked.", "Coffee machine clean and operational.", "Furniture and other items returned to their normal positions.", "TV, speakers, monitors, lights and key appliances present and undamaged.", "All bins emptied.", "Floors clean.", "Property smells fresh without excessive fragrance.", "All windows closed.", "Report any damage, missing items, low stock, mould, leaks, maintenance problems, unusual smells or appliance faults.", "Take final photos of the kitchen, bathroom, living room and bedrooms before leaving."]]];
@@ -249,6 +299,8 @@ const REGULAR = [["Upon Arrival", ["On entry, check for damage and cigarette/pet
 const REGULAR_NOTES = [["Laundry first", "Laundry takes a while, so begin it first. Laundry capsules are in the pot above the microwave. The washer is in the kitchen. Laundry can be dried downstairs at Temple Laundrette."], ["Supply cupboard", "Use code 4060 to access the supply cupboard in the bedroom. A ladder is required. It contains refillable supplies and clean laundry and should remain locked during guest stays."], ["Arrival / access", "Free on-street parking is available. Look for number 38 beside Martin's Newsagent. Press the 1/2 buzzer, go to the 1st floor, middle door 1/2. At the flat door, enter the last 4 digits of your mobile number, then press the padlock icon (bottom right) to unlock."]];
 
 let currentType = null;
+let legacyReport = '';
+let issueReturnFocus;
 let boxes = [];
 let sectionCounters = [];
 
@@ -284,6 +336,8 @@ function openChecklist(type, updateHistory = true, moveFocus = true){
   document.getElementById('checklistSubtitle').textContent = isDeep ? 'Every 3 months: September · December · March · June' : 'Complete after every guest checkout';
   document.getElementById('month').closest('.field').style.display = isDeep ? 'block' : 'none';
 
+  document.getElementById('cleanDetails').hidden = isDeep;
+  document.getElementById('cleanDetails').classList.toggle('hidden', isDeep);
   renderNotes(isDeep);
   renderSections(isDeep ? DEEP : REGULAR);
   loadState();
@@ -342,13 +396,13 @@ function loadState(){
   month.value=s.month||'';
   date.value=s.date||'';
   guests.value=s.guests||'';
-  report.value=s.report||'';
+  legacyReport=s.report||'';
 }
 
 function saveState(){
   localStorage.setItem(key(), JSON.stringify({
     checked:boxes.map(b=>b.checked),
-    cleaner:cleaner.value, month:month.value, date:date.value, guests:guests.value, report:report.value
+    cleaner:cleaner.value, month:month.value, date:date.value, guests:guests.value, report:legacyReport
   }));
   saved.textContent='Saved automatically on this device.';
 }
@@ -363,11 +417,11 @@ function updateProgress(){
 function resetChecklist(){
   if(!confirm('Reset this entire checklist and all entered details?')) return;
   boxes.forEach(b=>{b.checked=false;b.closest('.task').classList.remove('checked')});
-  cleaner.value='';month.value='';date.value='';guests.value='';report.value='';
+  cleaner.value='';month.value='';date.value='';guests.value='';legacyReport='';
   saveState();updateProgress();
 }
 
-[cleaner,month,date,guests,report].forEach(el=>{el.addEventListener('input',saveState);el.addEventListener('change',saveState)});
+[cleaner,month,date,guests].forEach(el=>{el.addEventListener('input',saveState);el.addEventListener('change',saveState)});
 
 function viewFromLocation(){
   const view = location.hash.slice(1);
@@ -394,6 +448,7 @@ document.querySelectorAll('.faq-item').forEach((item, index) => {
 });
 
 function restoreView(event){
+  document.querySelectorAll("dialog[open]").forEach(dialog => dialog.close());
   const view = viewFromLocation();
   if(view === 'regular' || view === 'deep') openChecklist(view, false, !!event);
   else if(view === 'faq') openFAQ(false, !!event);
@@ -431,6 +486,29 @@ setInterval(() => {
     reminders[reminderIndex].setAttribute('aria-hidden','false');
   }, 200);
 }, 5000);
+
+const HOST_WHATSAPP = '447773333455';
+function hostMessageURL(message){ return 'https://wa.me/'+HOST_WHATSAPP+'?text='+encodeURIComponent(message); }
+function openIssueReport(){
+  const dialog = document.getElementById('issueDialog');
+  issueReturnFocus = document.activeElement;
+  document.getElementById('issueCleanType').textContent = currentType === 'deep' ? 'Deep Clean' : 'Regular Clean';
+  dialog.querySelectorAll('input').forEach(input => input.checked = false);
+  document.getElementById('issueWhatsApp').classList.add('hidden');
+  dialog.showModal();
+}
+document.getElementById('issueDialog').addEventListener('change', event => {
+  if(event.target.name !== 'issueType') return;
+  const kind = currentType === 'deep' ? 'Deep Clean' : 'Regular Clean';
+  const cleanDate = currentType === 'regular' && date.value ? ' on '+new Intl.DateTimeFormat('en-GB',{dateStyle:'long'}).format(new Date(date.value+'T12:00:00')) : '';
+  const link = document.getElementById('issueWhatsApp');
+  link.href = hostMessageURL('Hi, I need to report an issue at Anniesland during the '+kind+cleanDate+'. Issue type: '+event.target.value+'.');
+  link.classList.remove('hidden');
+});
+document.getElementById('issueDialog').addEventListener('close', () => { if(issueReturnFocus?.isConnected && !issueReturnFocus.closest('.hidden')) issueReturnFocus.focus(); });
 </script>
+<script src="calendar.js"></script>
+<script src="account.js"></script>
+<script>if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(() => {}); }</script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+{
+  "$schema":"https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand":"npm run build",
+  "installCommand":"npm ci",
+  "outputDirectory":"public",
+  "headers":[
+    {"source":"/(.*)","headers":[{"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive, nosnippet, noimageindex"}]},
+    {"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache"}]}
+  ]
+}
