@@ -17,11 +17,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cleaning Hub</title>
 <style>
-:root{--bg:#f4f6f8;--card:#fff;--text:#18212b;--muted:#667085;--border:#d9e0e7;--accent:#1677ff;--accent2:#0f766e;--soft:#eaf3ff;--hero:#1f2937;--danger:#b42318}
+:root{--bg:#f4f6f8;--card:#fff;--text:#18212b;--muted:#626c80;--border:#d9e0e7;--accent:#0964d9;--accent2:#0f766e;--soft:#eaf3ff;--hero:#1f2937;--danger:#b42318}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 .wrap{max-width:820px;margin:0 auto;padding:14px} .hidden{display:none!important}
 .hero{background:var(--hero);color:#fff;border-radius:18px;padding:22px;margin-bottom:14px} .hero h1{margin:0 0 6px;font-size:26px} .hero p{margin:0;color:#d1d5db;line-height:1.45}
-.quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.quick-actions .primary{min-height:44px;padding:10px 8px;font-size:14px}
+.quick-actions{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.quick-actions>*{grid-column:span 2}.quick-actions .calendar-action{grid-column:span 3}.quick-actions .primary{min-height:44px;padding:10px 8px;font-size:14px}
+.quick-actions .faq-action{background:var(--danger)} .quick-actions .calendar-action{background:var(--accent2)}
+.quick-actions svg{width:16px;height:16px;margin-right:6px;flex-shrink:0}
+:focus-visible{outline:3px solid #0964d9;outline-offset:3px}
+.hero :focus-visible{outline-color:#fff}
+.faq-q:focus-visible{outline-offset:-3px}
+.reminder-toggle{margin-top:6px;min-height:24px;padding:3px 7px;border:1px solid #9ca3af;border-radius:6px;background:transparent;color:#fff;font:inherit;font-size:12px;cursor:pointer}
 .calendar-embed{margin-top:14px;min-width:0;scroll-margin-top:10px} .calendar-embed iframe{display:block;width:100%;height:720px;border:0}
 .reminders{display:grid;font-size:14px;line-height:1.45}
 .reminder{grid-area:1/1;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease}
@@ -40,7 +46,7 @@
 .meta{display:grid;grid-template-columns:1.2fr 1fr 1fr .8fr;gap:10px;margin-bottom:14px} .field{font-size:13px;font-weight:700} .field input,.field select,.report textarea{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;font-size:16px}
 .info{background:#fff8db;border:1px solid #eddc8c;border-radius:14px;padding:14px;margin-bottom:12px} .info strong{display:block;margin-bottom:5px} .info p{margin:0;line-height:1.45;color:#4b5563;font-size:14px}
 .section{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px} .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;background:#eef2f7;border-bottom:1px solid var(--border)} .section-head h2{margin:0;font-size:16px} .section-count{font-size:12px;color:var(--muted);white-space:nowrap}
-.task{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-bottom:1px solid #edf0f3;cursor:pointer} .task:last-child{border-bottom:0} .task input{width:24px;height:24px;min-width:24px;margin:1px 0 0;accent-color:var(--accent)} .task span{font-size:15px;line-height:1.45} .task.checked{background:var(--soft)} .task.checked span{text-decoration:line-through;color:#667085}
+.task{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-bottom:1px solid #edf0f3;cursor:pointer} .task:last-child{border-bottom:0} .task input{width:24px;height:24px;min-width:24px;margin:1px 0 0;accent-color:var(--accent)} .task span{font-size:15px;line-height:1.45} .task.checked{background:var(--soft)} .task.checked span{text-decoration:line-through;color:var(--muted)}
 .report{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px} .report h3{margin:0 0 5px;font-size:16px} .report p{margin:0 0 8px;color:var(--muted);font-size:13px;line-height:1.4} .report textarea{min-height:120px;resize:vertical}
 .actions{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:0 0 30px} .saved{font-size:12px;color:var(--muted)} .reset{border:1px solid var(--border);background:#fff;border-radius:11px;padding:10px 13px;color:var(--danger);font-weight:700;cursor:pointer}
 
@@ -52,7 +58,7 @@
 .faq-item.open .faq-q span:last-child{transform:rotate(180deg)}
 .faq-q span:last-child{transition:transform .2s}
 
-@media(max-width:700px){.quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.calendar-embed{margin-top:10px}.home-grid{grid-template-columns:1fr}.home-card{min-height:auto}.meta{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.quick-actions>*,.quick-actions .calendar-action{grid-column:auto}.quick-actions .faq-action{grid-column:1/-1}.desktop-label{display:none}.calendar-embed{margin-top:10px}.home-grid{grid-template-columns:1fr}.home-card{min-height:auto}.meta{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.wrap{padding:10px}.hero{border-radius:14px}.hero h1{font-size:23px}.meta{grid-template-columns:1fr}.task{padding:14px 12px}.actions{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
@@ -61,7 +67,7 @@
   <main id="homeView">
     <section class="hero">
       <h1>Cleaning Hub</h1>
-      <div class="reminders" aria-label="Cleaner reminders">
+      <div class="reminders" role="region" aria-label="Cleaner reminders">
         <p class="reminder active" aria-hidden="false"><strong>📸 Photos After Every Clean</strong>Please take clear photos after every clean. Payment will only be released once the required photos have been submitted.</p>
         <p class="reminder" aria-hidden="true"><strong>✅ Always Use the Checklist</strong>Complete the Cleaning Hub checklist during every clean. Checklist progress can be reviewed afterwards to confirm all tasks have been completed.</p>
         <p class="reminder" aria-hidden="true"><strong>✨ Deep Clean Months</strong>Deep cleans take place every September, December, March and June. Please use the Deep Clean checklist for these visits.</p>
@@ -73,14 +79,14 @@
         <p class="reminder" aria-hidden="true"><strong>🧻 Check Guest Essentials</strong>Before finishing, make sure all required restock items and guest essentials are ready for the next booking.</p>
         <p class="reminder" aria-hidden="true"><strong>🔍 Final Check</strong>Before locking up, complete a final walkthrough and check the cleaning checklist, photos, restocking and presentation of the property.</p>
       </div>
+      <button type="button" class="reminder-toggle" id="reminderToggle" onclick="toggleReminders()">Pause reminders</button>
     </section>
     <nav class="quick-actions" aria-label="Cleaning Hub quick actions">
-      <button type="button" class="primary" onclick="openChecklist('regular')">Regular Clean</button>
-      <button type="button" class="primary" onclick="openChecklist('deep')">Deep Clean</button>
-      <button type="button" class="primary calendar" onclick="const calendar = document.getElementById('cleaningCalendar'); calendar.scrollIntoView({block:'start'}); calendar.focus({preventScroll:true});">Cleaning Calendar</button>
-      <button type="button" class="primary secondary" onclick="openFAQ()">Cleaner FAQ</button>
-      <a class="primary secondary" href="https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics" target="_blank" rel="noopener" referrerpolicy="no-referrer">Add to Calendar</a>
-      <button type="button" class="primary secondary" aria-live="polite" onclick="navigator.clipboard.writeText('https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics').then(() => { this.textContent = 'Copied!'; clearTimeout(this.copyResetTimer); this.copyResetTimer = setTimeout(() => { this.textContent = 'Copy iCal Link'; }, 2500); }).catch(() => alert('Unable to copy the iCal link. Please try again.'))">Copy iCal Link</button>
+      <button type="button" class="primary" onclick="openChecklist('regular')"><span>Regular Clean<span class="desktop-label"> Checklist</span></span></button>
+      <button type="button" class="primary" onclick="openChecklist('deep')"><span>Deep Clean<span class="desktop-label"> Checklist</span></span></button>
+      <button type="button" class="primary faq-action" onclick="openFAQ()">Cleaner FAQ</button>
+      <a class="primary calendar-action" href="https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics" target="_blank" rel="noopener" referrerpolicy="no-referrer">Add to Calendar</a>
+      <button type="button" class="primary calendar-action" aria-live="polite" onclick="navigator.clipboard.writeText('https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics').then(() => { this.querySelector('[data-copy-label]').textContent = 'Copied!'; clearTimeout(this.copyResetTimer); this.copyResetTimer = setTimeout(() => { this.querySelector('[data-copy-label]').textContent = 'Copy iCal Link'; }, 2500); }).catch(() => alert('Unable to copy the iCal link. Please try again.'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/></svg><span data-copy-label>Copy iCal Link</span></button>
     </nav>
     <section id="cleaningCalendar" class="section calendar-embed" tabindex="-1" aria-label="Cleaning calendar">
       <iframe src="https://turncal.com/a/anniesland" title="TurnCal cleaning calendar" loading="lazy" referrerpolicy="no-referrer"></iframe>
@@ -189,9 +195,9 @@
     <div id="sections"></div>
 
     <section class="report">
-      <h3>Issues / Maintenance / Stock Report</h3>
+      <h3 id="reportLabel">Issues / Maintenance / Stock Report</h3>
       <p>Report damage, missing items, guest belongings, low stock, mould, leaks, unusual smells, appliance faults or anything requiring attention. Write “No issues” if everything is okay.</p>
-      <textarea id="report" placeholder="Write report here..."></textarea>
+      <textarea aria-labelledby="reportLabel" id="report" placeholder="Write report here..."></textarea>
     </section>
 
     <div class="actions">
@@ -210,25 +216,28 @@ let currentType = null;
 let boxes = [];
 let sectionCounters = [];
 
-function goHome(updateHistory = true){
+function goHome(updateHistory = true, moveFocus = true){
   document.getElementById('checklistView').classList.add('hidden');
   document.getElementById('faqView').classList.add('hidden');
   document.getElementById('homeView').classList.remove('hidden');
   if(updateHistory) pushView('home');
+  if(moveFocus) focusViewHeading('homeView');
 }
 
-function openFAQ(updateHistory = true){
+function openFAQ(updateHistory = true, moveFocus = true){
   document.getElementById('homeView').classList.add('hidden');
   document.getElementById('checklistView').classList.add('hidden');
   document.getElementById('faqView').classList.remove('hidden');
   if(updateHistory) pushView('faq');
+  if(moveFocus) focusViewHeading('faqView');
 }
 
 function toggleFAQ(btn){
-  btn.closest('.faq-item').classList.toggle('open');
+  const expanded = btn.closest('.faq-item').classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(expanded));
 }
 
-function openChecklist(type, updateHistory = true){
+function openChecklist(type, updateHistory = true, moveFocus = true){
   currentType = type;
   document.getElementById('homeView').classList.add('hidden');
   document.getElementById('faqView').classList.add('hidden');
@@ -244,6 +253,7 @@ function openChecklist(type, updateHistory = true){
   loadState();
   updateProgress();
   if(updateHistory) pushView(type);
+  if(moveFocus) focusViewHeading('checklistView');
 }
 
 function renderNotes(isDeep){
@@ -333,11 +343,25 @@ function pushView(view){
   history.pushState({view},'',location.pathname + location.search + (view === 'home' ? '' : '#'+view));
 }
 
-function restoreView(){
+function focusViewHeading(viewId){
+  const heading = document.querySelector('#'+viewId+' h1');
+  heading.tabIndex = -1;
+  heading.focus();
+}
+
+document.querySelectorAll('.faq-item').forEach((item, index) => {
+  const question = item.querySelector('.faq-q');
+  const answer = item.querySelector('.faq-a');
+  answer.id = 'faq-answer-'+index;
+  question.setAttribute('aria-controls', answer.id);
+  question.setAttribute('aria-expanded', 'false');
+});
+
+function restoreView(event){
   const view = viewFromLocation();
-  if(view === 'regular' || view === 'deep') openChecklist(view, false);
-  else if(view === 'faq') openFAQ(false);
-  else goHome(false);
+  if(view === 'regular' || view === 'deep') openChecklist(view, false, !!event);
+  else if(view === 'faq') openFAQ(false, !!event);
+  else goHome(false, !!event);
 }
 
 history.replaceState({view:viewFromLocation()},'');
@@ -347,12 +371,23 @@ restoreView();
 const reminderArea = document.querySelector('.reminders');
 const reminders = [...reminderArea.querySelectorAll('.reminder')];
 let reminderIndex = 0;
+let remindersPaused = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reminderToggle = document.getElementById('reminderToggle');
+function updateReminderToggle(){
+  reminderToggle.textContent = remindersPaused ? 'Resume reminders' : 'Pause reminders';
+}
+function toggleReminders(){
+  remindersPaused = !remindersPaused;
+  updateReminderToggle();
+}
+updateReminderToggle();
 setInterval(() => {
-  if(document.hidden || document.getElementById('homeView').classList.contains('hidden') ||
+  if(remindersPaused || document.hidden || document.getElementById('homeView').classList.contains('hidden') ||
      reminderArea.matches(':hover') || reminderArea.contains(document.activeElement)) return;
   const previous = reminders[reminderIndex];
   previous.classList.add('fading');
   setTimeout(() => {
+    if(remindersPaused){ previous.classList.remove('fading'); return; }
     previous.classList.remove('active','fading');
     previous.setAttribute('aria-hidden','true');
     reminderIndex = (reminderIndex + 1) % reminders.length;
