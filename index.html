@@ -19,7 +19,7 @@
 <style>
 :root{--bg:#f8faf9;--card:#fff;--text:#142a24;--muted:#56665f;--border:#d5dfda;--accent:#087d3e;--accent2:#115b49;--soft:#e8f5ee;--hero:#123c30;--danger:#b42318}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-.wrap{max-width:820px;margin:0 auto;padding:14px} .hidden{display:none!important}
+.wrap{max-width:1100px;margin:0 auto;padding:14px} .hidden{display:none!important}
 .brand-header{display:flex;align-items:center;gap:12px;padding:8px 2px 18px}
 .brand-mark{width:44px;height:44px;flex-shrink:0}
 .brand-header h1{margin:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;line-height:1.15}
@@ -72,6 +72,19 @@
 
 @media(max-width:700px){.quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.quick-actions>*,.quick-actions .calendar-action{grid-column:auto}.quick-actions .faq-action{grid-column:1/-1}.desktop-label{display:none}.calendar-embed{margin-top:10px}.home-grid{grid-template-columns:1fr}.home-card{min-height:auto}.meta{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.wrap{padding:12px}.brand-header{padding:4px 0 14px;gap:10px}.brand-header h1{gap:4px 10px}.brand-name{font-size:27px}.hub-name{font-size:16px}.brand-mark{width:38px;height:38px}.hero{border-radius:14px;padding:12px;margin-bottom:12px}.meta{grid-template-columns:1fr}.task{padding:14px 12px}.actions{align-items:flex-start;flex-direction:column}}
+@media(min-width:1100px){
+  .wrap{max-width:none;padding:20px 24px}
+  #homeView{display:grid;grid-template-columns:clamp(320px,27vw,400px) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;gap:16px 24px}
+  .brand-header{grid-column:1/-1;padding:0 0 4px}
+  .hero{grid-column:1;grid-row:2;margin:0;align-self:start}
+  .action-heading{grid-column:1;grid-row:3;margin:0}
+  .quick-actions{grid-column:1;grid-row:4;grid-template-columns:repeat(2,minmax(0,1fr));align-self:start}
+  .quick-actions>*,.quick-actions .calendar-action{grid-column:auto}
+  .quick-actions .faq-action{grid-column:1/-1}
+  .calendar-embed{grid-column:2;grid-row:2/5;margin:0;align-self:start}
+  .calendar-embed iframe{height:calc(100dvh - 100px);min-height:620px}
+  #faqView,#checklistView{max-width:1000px;margin:0 auto}
+}
 </style>
 </head>
 <body>
@@ -171,7 +184,7 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)"><span>How do I know when the next clean is due?</span><span>⌄</span></button>
-        <div class="faq-a"><strong>Important:</strong> always click the booking event in the Hostex calendar to open the full reservation details and confirm the actual checkout date. The date shown on the calendar tile can be misleading at a glance. For example, an event may appear under the 6th even though the guest actually checks out on the 7th. The clean is due after the guest checks out, so always open the event and verify the checkout date before planning the clean.</div>
+        <div class="faq-a"><strong>Always check the calendar to confirm the checkout date and next clean. Do not rely on WhatsApp notifications.</strong> Make checking it part of your routine. Prefer your own calendar? Use “Add to Calendar” or copy the iCal link and subscribe in your calendar app to keep bookings for all your customers in one place.</div>
       </div>
 
       <div class="faq-item">
@@ -186,7 +199,7 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)"><span>How should quarterly deep cleans be carried out?</span><span>⌄</span></button>
-        <div class="faq-a"><strong>Deep cleans should be completed as a solo 4-hour clean.</strong> The purpose is not only to clean more thoroughly, but also to give one person dedicated time every three months to inspect the property properly and deal with anything that may have changed. From time to time, new electrical items or important equipment may also have been delivered — for example a washing machine or another appliance — and the quarterly deep clean is the opportunity to make sure everything is present, correctly positioned, undamaged and working as expected. Please do not rush or split the deep clean between multiple cleaners unless agreed in advance.</div>
+        <div class="faq-a"><strong>Deep cleans are a solo 4.5-hour visit.</strong> Allow time to check the property and any deliveries or newly installed equipment. Do not split the visit between cleaners unless agreed in advance.</div>
       </div>
     </div>
   </main>
