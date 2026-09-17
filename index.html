@@ -75,7 +75,7 @@
           <p>You can subscribe to this property's cleaning calendar using the iCal link below. This lets you keep my bookings alongside your other customers in one central calendar, rather than having to keep checking my calendar separately.</p>
         </div>
         <a class="primary secondary" href="https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics" target="_blank" rel="noopener" referrerpolicy="no-referrer">Add / Subscribe via iCal</a>
-        <button type="button" class="primary secondary" onclick="navigator.clipboard.writeText('https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics').catch(() => alert('Unable to copy the iCal link. Please try again.'))">Copy iCal Link</button>
+        <button type="button" class="primary secondary" aria-live="polite" onclick="navigator.clipboard.writeText('https://turncal.com/ical/2b34b367-9aa6-4df4-b407-e47e52bfeba4.ics').then(() => { this.textContent = 'Link copied'; clearTimeout(this.copyResetTimer); this.copyResetTimer = setTimeout(() => { this.textContent = 'Copy iCal Link'; }, 2500); }).catch(() => alert('Unable to copy the iCal link. Please try again.'))">Copy iCal Link</button>
       </article>
       <article class="home-card">
         <div><div class="icon">❓</div><h2>Cleaner FAQ</h2><p>Payment, supplies, deliveries, access, laundry, reporting issues and other common questions.</p></div>
