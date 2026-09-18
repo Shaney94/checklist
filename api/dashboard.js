@@ -1,3 +1,4 @@
+const {createStore:createUIStore}=require('../lib/workspace-ui-store.cjs');
 const {randomUUID}=require('node:crypto');
 const {currentUser,privateHeaders,validOrigin}=require('../lib/account.cjs');
 const {createStore}=require('../lib/dashboard-store.cjs');
@@ -6,7 +7,7 @@ function change(data,b){
  const next=structuredClone(data);
  if(b.action==='legacy-progress'){
   if(!['regular','deep'].includes(b.kind)||!b.state||!Array.isArray(b.state.checked)||b.state.checked.length>300||b.state.checked.some(v=>typeof v!=='boolean'))throw Error('Invalid progress');
-  const progress={checked:b.state.checked};for(const field of ['cleaner','month','date','guests','report'])progress[field]=text(b.state[field]||'',3000);
+  const progress={checked:b.state.checked};
   next.legacyProgress||={};next.legacyProgress[b.kind]=progress;return next;
  }
  let p=next.properties.find(p=>p.id===b.id);
@@ -31,13 +32,19 @@ function change(data,b){
  }
  return next;
 }
-function createHandler(authenticate=currentUser,getStore=createStore){return async(req,res)=>{
+function createHandler(authenticate=currentUser,getStore=createStore,getUIStore=createUIStore){return async(req,res)=>{
  privateHeaders(res);
  if(!['GET','POST'].includes(req.method)){res.setHeader('Allow','GET, POST');return res.status(405).json({error:'Method not allowed.'});}
  if(req.method==='POST'&&(!validOrigin(req)||!String(req.headers['content-type']).startsWith('application/json')))return res.status(403).json({error:'Please use the Turnli website.'});
  try{
   const user=await authenticate(req,res);if(!user)return res.status(401).json({error:'Please log in.'});if(!user.workspaceId)return res.status(403).json({error:'Workspace unavailable.'});
-  const store=getStore(),saved=await store.load(user.workspaceId);if(req.method==='GET')return res.status(200).json(saved);
+  if(req.query?.action==='preferences'||req.body?.action==='preferences'){
+   if(!user.id)return res.status(403).json({error:'Account unavailable.'});
+   if(req.method==='GET')return res.status(200).json(await getUIStore().preferences(user.workspaceId,user.id));
+   if(typeof req.body.sidebarCollapsed!=='boolean')return res.status(400).json({error:'Invalid preference.'});
+   return res.status(200).json(await getUIStore().savePreferences(user.workspaceId,user.id,req.body.sidebarCollapsed));
+  }
+  const store=getStore(),saved=await store.load(user.workspaceId);if(req.method==='GET'){if(saved.data.legacyProgress)for(const k of Object.keys(saved.data.legacyProgress))saved.data.legacyProgress[k]={checked:saved.data.legacyProgress[k].checked||[]};return res.status(200).json(saved);}
   const b=req.body;if(!b||JSON.stringify(b).length>150000||!Number.isInteger(b.revision))return res.status(400).json({error:'Invalid request.'});
   if(b.revision!==saved.revision)return res.status(409).json({error:'This workspace changed in another tab. Reload it before saving.'});
   if(b.action==='legacy-progress'&&!user.legacyAccess)return res.status(403).json({error:'These checklists are not part of this workspace.'});

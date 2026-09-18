@@ -14,41 +14,47 @@
   const fields=[['Property',booking.property],['Check-in',full(booking.arrival.date)+' · '+time(booking.arrival)],['Checkout',full(booking.checkout.date)+' · '+time(booking.checkout)]];
   if(booking.guests)fields.push(['Guests',String(booking.guests)]);if(booking.source)fields.push(['Booking source',booking.source]);
   fields.forEach(([label,value])=>{const row=node('div');row.append(node('strong',label+': '),document.createTextNode(value));area.append(row);});
-  const next=bookings.find(item=>item.id!==booking.id&&item.calendarId===booking.calendarId&&item.arrival.date===booking.checkout.date);
-  document.getElementById('cleanTimingNote').textContent='Turnli clean: after checkout'+(booking.checkout.time?' at '+booking.checkout.time:'')+'. '+(next?'Next guest checks in the same day at '+time(next.arrival)+'. ':'')+'Confirm the cleaning start time with your host.'+(booking.arrival.timeSource==='property-rule'||booking.checkout.timeSource==='property-rule'?' Times marked by property rules are operational defaults, not times supplied by the all-day iCal event.':'')+' UK time.';
+  document.getElementById('cleanTimingNote').textContent=(booking.arrival.timeSource==='property-rule'||booking.checkout.timeSource==='property-rule')?'Times use this property’s check-in/checkout settings because the iCal feed supplies dates only. UK time.':'All times are UK time.';
   document.getElementById('cantMakeConfirmation').hidden=true;document.getElementById('cantMakeButton').hidden=!booking.canContactHost||typeof hostMessageURL!=='function';
   if(booking.canContactHost&&typeof hostMessageURL==='function')document.getElementById('cleanWhatsApp').href=hostMessageURL(`Hi, I’m unable to make the clean at ${booking.property} after checkout on ${full(booking.checkout.date)}${booking.checkout.time?' at '+booking.checkout.time+' (UK time)':''}. I wanted to let you know as soon as possible so alternative cover can be arranged.`);
   dialog.showModal();
  }
- function bookingButton(b){
-  const button=node('button',null,'stay-bar');button.type='button';
-  button.append(node('span',time(b.arrival)+' Check-in','stay-start'),node('span',b.guests?b.guests+' guests':'Guest stay','stay-guests'),node('span',time(b.checkout)+' Check-out','stay-end'));
-  button.title=`${b.property} · Check-in ${full(b.arrival.date)} ${time(b.arrival)} · Checkout ${full(b.checkout.date)} ${time(b.checkout)}${b.guests?' · '+b.guests+' guests':''}`;
-  button.setAttribute('aria-label',button.title);button.addEventListener('click',()=>details(b));return button;
+ function bookingLabel(b){return `${b.property} · ${b.source||'Reservation'} · Check-in ${full(b.arrival.date)} ${time(b.arrival)} · Check-out ${full(b.checkout.date)} ${time(b.checkout)}${b.guests?' · '+b.guests+' guests':''}`;}
+ function decorateBooking(button,b){button.type='button';button.dataset.bookingId=b.id;button.dataset.source=b.sourceKey||'unknown';button.title=bookingLabel(b);button.setAttribute('aria-label',button.title+(b.isNew?' · New booking':''));button.addEventListener('click',()=>details(b));if(b.isNew)button.dataset.newBooking='true';}
+ function bookingButton(segment){
+  const {booking:b,continuesBefore,continuesAfter}=segment,container=node('div',null,'stay-container'),button=node('button',null,'stay-bar');decorateBooking(button,b);
+  if(continuesBefore)button.classList.add('continues-before');if(continuesAfter)button.classList.add('continues-after');
+  const normal=node('span',null,'stay-normal');
+  const start=node('span',null,'stay-start');if(continuesBefore)start.append(node('span','←','continuation-arrow'));else{start.append(document.createTextNode(b.arrival.time||'—'),node('span',' Check-in','time-caption'));}
+  const end=node('span',null,'stay-end');if(continuesAfter)end.append(node('span','→','continuation-arrow'));else{end.append(document.createTextNode(b.checkout.time||'—'),node('span',' Check-out','time-caption'));}
+  normal.append(start,node('span',b.guests?b.guests+' guests':'Reserved','stay-guests'),end);button.append(normal,node('span','New booking','new-booking-label'));
+  if(continuesBefore||continuesAfter){const arrows=node('span',(continuesBefore?'← ':'')+(continuesAfter?' →':''),'narrow-continuation');arrows.setAttribute('aria-hidden','true');button.append(arrows);}
+  container.append(button);container.style.gridColumn=`${segment.first+1} / ${segment.last+1}`;container.style.gridRow=String(segment.lane+1);return container;
  }
  function render(){
   monthLabel.textContent=new Intl.DateTimeFormat('en-GB',{month:'long',year:'numeric',timeZone:'UTC'}).format(month);grid.replaceChildren();list.replaceChildren();
   const year=month.getUTCFullYear(),mon=month.getUTCMonth(),offset=(month.getUTCDay()+6)%7,start=new Date(month.getTime()-offset*dayMS),last=new Date(Date.UTC(year,mon+1,0,12));
-  const weeks=Math.ceil((offset+last.getUTCDate())/7);
+  const weeks=Math.ceil((offset+last.getUTCDate())/7),desktop=node('div',null,'desktop-month'),mobile=node('div',null,'mobile-month');
   for(let w=0;w<weeks;w++){
-    const ws=new Date(start.getTime()+w*7*dayMS),we=new Date(ws.getTime()+6*dayMS),week=node('div',null,'booking-week'),days=node('div',null,'week-dates');
-    for(let i=0;i<7;i++){const d=new Date(ws.getTime()+i*dayMS),label=node('span',String(d.getUTCDate()));if(d.getUTCMonth()!==mon)label.classList.add('outside-month');if(iso(d)===today()){label.classList.add('is-today');label.setAttribute('aria-current','date');}days.append(label);}week.append(days);
-    const bars=node('div',null,'week-stays'),laneEnds=[];
-    bookings.filter(b=>b.arrival.date<=iso(we)&&b.checkout.date>=iso(ws)).forEach(b=>{
-      const first=Math.max(0,Math.round((date(b.arrival.date)-ws)/dayMS)),end=Math.min(6,Math.round((date(b.checkout.date)-ws)/dayMS));
-      let lane=laneEnds.findIndex(n=>n<first);if(lane===-1)lane=laneEnds.length;laneEnds[lane]=end;
-      const bar=bookingButton(b);bar.style.gridColumn=`${first+1} / ${end+2}`;bar.style.gridRow=String(lane+1);if(first===end)bar.classList.add('short-stay');bars.append(bar);
-    });week.append(bars);
-    const cleans=node('div',null,'week-cleans');
-    bookings.filter(b=>b.checkout.date>=iso(ws)&&b.checkout.date<=iso(we)).forEach(b=>{const clean=node('button','Clean after '+time(b.checkout),'clean-marker');clean.type='button';clean.style.gridColumn=String(Math.round((date(b.checkout.date)-ws)/dayMS)+1);clean.setAttribute('aria-label',`Turnli clean after checkout on ${full(b.checkout.date)} at ${time(b.checkout)}`);clean.addEventListener('click',()=>details(b,true));cleans.append(clean);});week.append(cleans);grid.append(week);
-  }
-  const prefix=iso(month).slice(0,7),visible=bookings.filter(b=>b.arrival.date.slice(0,7)<=prefix&&b.checkout.date.slice(0,7)>=prefix);
-  if(!visible.length){list.append(node('p',bookings.some(b=>b.checkout.date>=today())?'No stays this month.':'No upcoming stays.','calendar-empty'));}
-  visible.forEach(b=>{
-    const stay=node('button',null,'timeline-stay');stay.type='button';stay.append(node('strong','Guest stay'),node('span',b.property+(b.guests?' · '+b.guests+' guests':'')),node('span','Check-in '+short(b.arrival.date)+' · '+time(b.arrival)),node('span','Checkout '+short(b.checkout.date)+' · '+time(b.checkout)));stay.addEventListener('click',()=>details(b));list.append(stay);
-    const clean=node('button',null,'timeline-clean');clean.type='button';clean.append(node('strong','Turnli clean'),node('span',short(b.checkout.date)+' · After checkout'+(b.checkout.time?' at '+b.checkout.time:'')));clean.addEventListener('click',()=>details(b,true));list.append(clean);
-  });
+   const ws=new Date(start.getTime()+w*7*dayMS),week=node('div',null,'booking-week'),days=node('div',null,'week-dates');
+   for(let i=0;i<7;i++){
+    const d=new Date(ws.getTime()+i*dayMS),key=iso(d),label=node('span',String(d.getUTCDate()));if(d.getUTCMonth()!==mon)label.classList.add('outside-month');if(key===today()){label.classList.add('is-today');label.setAttribute('aria-current','date');}days.append(label);
+    const cell=node('div',null,'month-cell');cell.setAttribute('aria-label',full(key));cell.append(label.cloneNode(true));if(d.getUTCMonth()!==mon)cell.classList.add('outside-month');
+    for(const b of bookings.filter(b=>b.arrival.date<=key&&b.checkout.date>=key)){
+     const chip=node('button',null,'mobile-booking');decorateBooking(chip,b);if(b.arrival.date<key)chip.classList.add('continues-before');if(b.checkout.date>key)chip.classList.add('continues-after');const abbrev={airbnb:'Air',booking:'B.c',vrbo:'Vrbo',houfy:'Houfy',unknown:'Stay'}[b.sourceKey||'unknown']||'Stay';
+     chip.append(node('span',abbrev,'mobile-source'));if(b.guests)chip.append(node('span',String(b.guests)+' ppl','mobile-guests'));if(b.isNew)chip.append(node('span','New booking','mobile-new'));cell.append(chip);
+    }mobile.append(cell);
+   }week.append(days);const bars=node('div',null,'week-stays');TurnliCalendarLayout.segments(bookings,iso(ws)).forEach(segment=>bars.append(bookingButton(segment)));week.append(bars);desktop.append(week);
+  }grid.append(desktop,mobile);
  }
+ async function acknowledgeNew(){
+  const visible=bookings.filter(b=>b.isNew),ids=visible.map(b=>b.id);if(!ids.length)return;
+  try{for(let i=0;i<ids.length;i+=50){const response=await fetch('/api/calendar',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'seen',ids:ids.slice(i,i+50)})});if(!response.ok)throw Error();}
+   for(const button of grid.querySelectorAll('[data-new-booking]'))button.classList.add('booking-new');
+   setTimeout(()=>{for(const button of grid.querySelectorAll('.booking-new')){button.classList.remove('booking-new');button.removeAttribute('data-new-booking');button.querySelector('.mobile-new')?.remove();}for(const b of visible)b.isNew=false;},6200);
+  }catch{status.textContent+=' New-booking markers could not be saved; they will be retried when the calendar reloads.';}
+ }
+
  async function load(){if(busy)return;busy=true;document.getElementById('refreshCalendar').disabled=true;document.getElementById('calendarSkeleton').hidden=loaded;root.setAttribute('aria-busy','true');status.textContent='Loading your booking calendar…';
   async function fetchData(){const q=new URLSearchParams({month:iso(month).slice(0,7)});if(selected)q.set('id',selected);const response=await fetch('/api/calendar?'+q,{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(20000)});if(response.status===401){location.replace('/?next='+encodeURIComponent('/app'+location.hash));throw Error('Your session expired.');}const data=await response.json();if(!response.ok)throw Error(data.error||'We couldn’t refresh your booking calendar.');return data;}
   try{let data=await fetchData();calendars=data.calendars||[];
@@ -56,11 +62,12 @@
    document.dispatchEvent(new CustomEvent('turnli:calendars',{detail:{calendars,selected}}));
    if(data.state==='not-connected'){bookings=[];loaded=true;status.textContent='Connect your booking calendar to see upcoming stays and automatically schedule cleans.';root.hidden=true;return;}
    if(!Array.isArray(data.bookings))throw Error('Invalid calendar response');bookings=data.bookings;loaded=true;render();root.hidden=false;
-   const errors=calendars.filter(c=>c.error&&(!selected||c.id===selected));status.textContent=errors.length?'Some calendars could not sync. Previously saved bookings are shown; check Manage calendars.':bookings.length?'Guest stays → checkout → Turnli clean. All times are UK time.':'No upcoming stays.';
+   const errors=calendars.filter(c=>c.error&&(!selected||c.id===selected));status.textContent=errors.length?'Some calendars could not sync. Previously saved bookings are shown; check Manage calendars.':bookings.length?'Guest stays → checkout → Turnli clean. All times are UK time.':'No stays this month.';
+   await acknowledgeNew();
   }catch(e){status.textContent=e.message+(loaded?' Previously loaded bookings may be out of date.':'');if(!loaded&&!original.hidden)original.open=true;}
   finally{busy=false;document.getElementById('calendarSkeleton').hidden=true;root.setAttribute('aria-busy','false');document.getElementById('refreshCalendar').disabled=false;}
  }
- document.getElementById('previousMonth').addEventListener('click',()=>{month.setUTCMonth(month.getUTCMonth()-1);load();});document.getElementById('nextMonth').addEventListener('click',()=>{month.setUTCMonth(month.getUTCMonth()+1);load();});document.getElementById('calendarToday').addEventListener('click',()=>{month=date(today().slice(0,7)+'-01');load();});document.getElementById('refreshCalendar').addEventListener('click',()=>document.dispatchEvent(new CustomEvent('turnli:refresh',{detail:{id:selected||undefined}})));
+ document.getElementById('previousMonth').addEventListener('click',()=>{if(busy)return;month.setUTCMonth(month.getUTCMonth()-1);load();});document.getElementById('nextMonth').addEventListener('click',()=>{if(busy)return;month.setUTCMonth(month.getUTCMonth()+1);load();});document.getElementById('calendarToday').addEventListener('click',()=>{if(busy)return;month=date(today().slice(0,7)+'-01');load();});document.getElementById('refreshCalendar').addEventListener('click',()=>document.dispatchEvent(new CustomEvent('turnli:refresh',{detail:{id:selected||undefined}})));
  document.addEventListener('turnli:reload',event=>{subscriptionUrl='';if(event.detail?.removed===selected)selected='';load();});
  document.addEventListener('turnli:filter',event=>{selected=event.detail.id;explicitAll=!selected;subscriptionUrl='';load();});
  document.getElementById('cantMakeButton').addEventListener('click',()=>{document.getElementById('cantMakeConfirmation').hidden=false;document.getElementById('cantMakeButton').hidden=true;document.getElementById('cantMakeTitle').focus();});dialog.addEventListener('close',()=>{if(returnFocus?.isConnected)returnFocus.focus();});
