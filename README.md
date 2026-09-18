@@ -1,39 +1,58 @@
-# Turnly Cleaning Hub
+# Turnli Cleaning Hub
 
-Static cleaning dashboard with two small Vercel Node endpoints. GitHub `main` deploys to `https://turnli.vercel.app`.
+The existing HTML/CSS/JavaScript application runs on Vercel. GitHub `main` deploys to `https://turnli.vercel.app`. No framework or second bookings database is introduced.
 
 ## Build and test
 
-- `npm ci`
-- `npm test`
-- `npm run build`
+Run `npm ci`, `npm test`, and `npm run build`. The build replaces the generated `public/` directory with an explicit public asset list. Vercel serves the account, calendar and private dashboard endpoints separately. GitHub Pages can only serve the public login shell; the application requires its Vercel endpoints.
 
-The build copies only public assets to `public/`. Secrets, server code and tests are excluded from that output. Vercel serves `api/calendar.js` and `api/account.js` as functions. GitHub Pages can still serve the static site; the original embedded calendar remains the fallback where these endpoints are unavailable.
+## Private dashboard source
+
+`/` is the public login page. `/app` is served by `api/app.js` only after the provider session and workspace membership are verified. The dashboard contains existing property instructions, so its versioned source is encrypted in `private/dashboard.enc`, outside the public build. The decryption key exists only in server environment variables.
+
+To edit on a new trusted checkout, pull the Vercel development environment into ignored `.env.local`, then run:
+
+```
+node --env-file=.env.local scripts/unseal-dashboard.cjs
+```
+
+Edit the ignored `.private/dashboard.html`, then seal it before testing and committing:
+
+```
+node --env-file=.env.local scripts/seal-dashboard.cjs
+npm test
+npm run build
+```
+
+Never commit the plaintext dashboard or `.env` files. Keep the content key backed up in the protected Vercel environment; changing it requires resealing the content. Historic Git commits predate this protection and may still contain previously public operational information. This change does not rewrite that history or rotate external access details.
 
 ## Accounts and invitations
 
-Descope manages accounts, email codes and invitations. The only invitation administrator is the verified `s.landerson@outlook.com` account. Other users must first be invited. Account sessions use Secure, HttpOnly, same-site cookies; no management key or session token is included in client JavaScript.
+Descope manages email/password login, email OTP, refresh sessions and invitations. Enable Password and OTP in its API/SDK authentication settings; set its display name to **Turnli**. Configure approximately 30-day refresh sessions with short-lived session tokens in Descope. Cookies are Secure, HttpOnly and SameSite=Lax; their lifetime is capped by the provider token expiry and 30 days. Existing cookie identifiers are retained to preserve sessions. No credentials are stored in localStorage.
 
-Configure in Vercel for each deployment environment:
+Only verified workspace members can open the dashboard or fetch calendar/subscription data. The existing verified owner remains the only invitation administrator. Invitations assign customers to the existing shared workspace, not independent property accounts. Password setup/reset always requires a fresh provider-verified email code. Sign out revokes the provider refresh session before clearing cookies. Private responses are no-store; browser-history restoration rechecks authentication before revealing the dashboard.
 
-- `DESCOPE_PROJECT_ID` (provisioned by integration)
-- `NEXT_PUBLIC_DESCOPE_BASE_URL` (provisioned by integration)
-- `DESCOPE_MANAGEMENT_KEY` — server only, project-scoped Asset Management Read & Write.
+Configure these **server-side** variables in Vercel:
 
-Enable email OTP through the Descope API/SDK settings. The owner can create their account using the dashboard's Invite customers action. Customers join using the invitation link and confirm their email code.
+- `DESCOPE_PROJECT_ID`
+- `NEXT_PUBLIC_DESCOPE_BASE_URL` (existing integration name, used server-side)
+- `DESCOPE_MANAGEMENT_KEY` — project-scoped Asset Management Read & Write
+- `TURNLI_TENANT_ID` — the shared workspace tenant
+- `TURNLI_CONTENT_KEY` — 32-byte base64 encryption key
+- `TURNLI_ICAL_URL` — existing private TurnCal feed
+- `TURNLI_PROPERTY_NAME`
+- `TURNLI_CHECKIN_TIME` and `TURNLI_CHECKOUT_TIME` — configured UK property rules in HH:mm format
 
-The invitation sends through Descope's configured email template and points to `https://turnli.vercel.app/?join=1`. Set the Descope project display name to **Turnly**. For a custom **Join Turnly** email button and exact wording, configure a custom email connector/template in Descope; system email templates cannot be edited by this project's user-management key. Application sign-in does not change the existing access model of the public cleaner hub or create separate customer property dashboards.
+OTP requests expose useful failures, apply a 60-second resend cooldown, and respect provider rate limiting. Only provider error codes/statuses are logged, never credentials or email contents. The standard Descope email sender/template is retained. An API success confirms provider acceptance, not inbox delivery; end-to-end delivery and password confirmation require the account holder. This management key cannot inspect/change authentication or email-connector settings.
 
-Never commit `.env` files, include the management key in public variables, or use real customer addresses in automated tests. Unit tests stub sends. An inbox/OTP check is needed to confirm actual email delivery and join completion.
+## Booking calendar
 
-## Calendar and WhatsApp
+The authenticated calendar endpoint fetches the existing feed without persisting bookings. Reservation bars span arrival through checkout; separate cleaning markers show the turnover after checkout. Mobile uses a chronological timeline. Details include available property, guest count, source and times.
 
-`/api/calendar` fetches the existing fixed TurnCal iCal feed without persisting bookings. Native turnover dates come from reservation checkout (`DTEND`); they are not promised cleaner start times. UTC times are converted to UK time; unsupported event formats open the original embedded calendar. Guest names and reservation codes are omitted from the native API response.
+All-day `DTEND` is exclusive and denotes checkout day. Check-in/checkout times applied to all-day events are explicitly labelled property rules, not feed data or promised cleaning start times. UTC timestamps are converted to Europe/London. Unsupported recurring/timezone formats produce a visible error and retain the original embedded calendar fallback. Loading, empty, disconnected and retry states are distinct.
 
-The issue-report and unavailable-clean actions open a WhatsApp draft for `+447773333455`. They never send messages automatically.
+Subscription URLs are returned only to authenticated users, as required for Add to Calendar and Copy iCal Link. These users can share copied links; the upstream subscription remains a bearer URL. WhatsApp actions only prepare drafts for review and manual sending.
 
 ## PWA and privacy
 
-The manifest and icons use the existing logo and the name Turnly. iPhone users can use Safari's Add to Home Screen. The service worker does not cache the dashboard or calendar; it supplies a generic offline message only. Checklist progress continues to use the existing local storage keys.
-
-`robots.txt` and the existing noindex metadata must remain unchanged. The CSP permits same-origin API connections; no third-party authentication scripts run in the dashboard.
+The manifest and icons use Turnli branding. The service worker does not cache operational content. Checklist progress retains existing local storage keys. `robots.txt` and noindex settings are preserved; noindex is not a substitute for authentication.

@@ -1,0 +1,26 @@
+(() => {
+ const passwordForm=document.getElementById('passwordForm'),codeForm=document.getElementById('codeForm'),status=document.getElementById('loginStatus'),emailInput=document.getElementById('loginEmail');
+ const params=new URLSearchParams(location.search);let next=params.get('next')||'/app';if(!/^\/app(?:#[a-z]+)?$/.test(next))next='/app';
+ // Upgrade old checklist deep links without exposing their contents on the login page.
+ if(['#regular','#deep','#faq'].includes(location.hash))next='/app'+location.hash;
+ let address='',reset=false,cooldownUntil=0,busy=false;
+ if(params.has('join'))document.getElementById('loginIntro').textContent='Welcome to Turnli. Use your invited email to log in. To create a password, choose Forgot password.';
+ if(params.has('reset'))document.getElementById('loginIntro').textContent='To set or change your password, enter your email and choose Forgot password. We’ll verify it with a code.';
+ async function request(body){
+  const response=await fetch('/api/account',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+  const data=await response.json();if(!response.ok){if(data.retryAfter)cooldownUntil=Date.now()+data.retryAfter*1000;throw Error(data.error||'We couldn’t complete that request. Please try again.');}return data;
+ }
+ async function run(action){if(busy)return;busy=true;status.textContent='';document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await action();}catch(error){status.textContent=error.name==='TimeoutError'?'The request timed out. Check your connection and try again.':error.message;}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);updateCooldown();}}
+ function updateCooldown(){const seconds=Math.max(0,Math.ceil((cooldownUntil-Date.now())/1000));const b=document.getElementById('resendCode');b.disabled=busy||seconds>0;b.textContent=seconds?`Resend code (${seconds}s)`:'Resend code';}
+ function enterCode(){passwordForm.hidden=true;codeForm.hidden=false;document.getElementById('loginTitle').textContent=reset?'Set your password':'Check your email';document.getElementById('loginIntro').textContent=reset?'Verify your email to securely set or reset your password.':'Use the newest code in your inbox. Check junk mail too.';document.getElementById('codeSentTo').textContent='Code sent to '+address+'.';document.getElementById('newPasswordFields').hidden=!reset;document.getElementById('newPassword').required=reset;document.getElementById('confirmPassword').required=reset;document.getElementById('verifyLogin').textContent=reset?'Save password and log in':'Log in →';document.getElementById('loginCode').focus();}
+ async function sendCode(isReset){if(!emailInput.reportValidity())return;reset=isReset;address=emailInput.value.trim();await run(async()=>{if(Date.now()<cooldownUntil)throw Error('Please wait before requesting another code.');await request({action:'send-code',email:address});cooldownUntil=Date.now()+60000;enterCode();});}
+ passwordForm.addEventListener('submit',event=>{event.preventDefault();run(async()=>{await request({action:'password-login',email:emailInput.value.trim(),password:document.getElementById('loginPassword').value});location.replace(next);});});
+ document.getElementById('emailLoginCode').addEventListener('click',()=>sendCode(false));document.getElementById('forgotPassword').addEventListener('click',()=>sendCode(true));
+ document.getElementById('resendCode').addEventListener('click',()=>sendCode(reset));
+ document.getElementById('backToPassword').addEventListener('click',()=>{codeForm.hidden=true;passwordForm.hidden=false;codeForm.reset();status.textContent='';document.getElementById('loginTitle').textContent='Welcome back';document.getElementById('loginIntro').textContent='Log in to manage your properties and cleaning.';emailInput.focus();});
+ codeForm.addEventListener('submit',event=>{event.preventDefault();run(async()=>{if(reset&&document.getElementById('newPassword').value!==document.getElementById('confirmPassword').value)throw Error('The passwords do not match.');await request({action:reset?'set-password':'verify-code',email:address,code:document.getElementById('loginCode').value,...(reset?{password:document.getElementById('newPassword').value}:{})});location.replace(next);});});
+ setInterval(updateCooldown,1000);
+ fetch('/api/account',{cache:'no-store',credentials:'same-origin'}).then(r=>r.json()).then(data=>{if(data.user&&!params.has('reset'))location.replace(next);}).catch(()=>{status.textContent='We couldn’t check your session. You can try logging in below.';});
+ fetch('/api/account?action=policy',{cache:'no-store'}).then(r=>r.json()).then(data=>{if(!data.policy)return;const p=data.policy;const needs=[p.uppercase&&'an uppercase letter',p.lowercase&&'a lowercase letter',p.number&&'a number',p.nonAlphanumeric&&'a symbol'].filter(Boolean);document.getElementById('passwordRequirements').textContent=`Use at least ${p.minLength} characters${needs.length?', including '+needs.join(', '):''}.`;document.getElementById('newPassword').minLength=p.minLength;}).catch(()=>{});
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+})();

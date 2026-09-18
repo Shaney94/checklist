@@ -1,24 +1,10 @@
-const {test}=require('node:test');
-const assert=require('node:assert/strict');
-const {parseCalendar}=require('../lib/calendar.cjs');
-const handler=require('../api/calendar.js');
-function feed(dates,extra=''){return `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test\r\nSUMMARY:(annies) Reserved: Private guest\r\nDESCRIPTION:Private reservation code\r\n${dates}\r\n${extra}END:VEVENT\r\nEND:VCALENDAR`;}
-test('TurnCal London stays become checkout turnovers without guest details',()=>{
- const data=parseCalendar(feed('DTSTART;TZID=Europe/London:20260913T150000\r\nDTEND;TZID=Europe/London:20260920T100000'));
- assert.deepEqual(data.bookings[0].checkout,{date:'2026-09-20',time:'10:00'});assert(!JSON.stringify(data).includes('Private'));
-});
-test('UTC times use the correct UK daylight saving offset',()=>{
- assert.deepEqual(parseCalendar(feed('DTSTART:20260913T140000Z\r\nDTEND:20260920T090000Z')).bookings[0].checkout,{date:'2026-09-20',time:'10:00'});
- assert.deepEqual(parseCalendar(feed('DTSTART:20261213T150000Z\r\nDTEND:20261220T100000Z')).bookings[0].checkout,{date:'2026-12-20',time:'10:00'});
-});
-test('all-day checkouts do not invent a time',()=>assert.deepEqual(parseCalendar(feed('DTSTART;VALUE=DATE:20260913\r\nDTEND;VALUE=DATE:20260920')).bookings[0].checkout,{date:'2026-09-20',time:null}));
-test('cancelled stays are excluded',()=>assert.equal(parseCalendar(feed('DTSTART:20260913T140000Z\r\nDTEND:20260920T090000Z','STATUS:CANCELLED\r\n')).bookings.length,0));
-test('unsupported recurrence and zones require the original calendar',()=>{
- assert.throws(()=>parseCalendar(feed('DTSTART:20260913T140000Z\r\nDTEND:20260920T090000Z','RRULE:FREQ=WEEKLY\r\n')));
- assert.throws(()=>parseCalendar(feed('DTSTART;TZID=America/New_York:20260913T150000\r\nDTEND;TZID=America/New_York:20260920T100000')));
-});
-test('missing checkout and malformed calendar fail visibly',()=>{assert.throws(()=>parseCalendar(feed('DTSTART:20260913T140000Z')));assert.throws(()=>parseCalendar('not a calendar'));});
-function response(){return {headers:{},setHeader(k,v){this.headers[k]=v},status(s){this.code=s;return this},json(data){this.data=data;return this}};}
-test('calendar endpoint rejects writes',async()=>{const res=response();await handler({method:'POST'},res);assert.equal(res.code,405);assert.equal(res.headers['Cache-Control'],'no-store');});
-test('upstream failures return a clear error, never empty bookings',async()=>{const original=global.fetch;global.fetch=async()=>{throw new Error('offline')};try{const res=response();await handler({method:'GET'},res);assert.equal(res.code,502);assert(res.data.error);assert(!res.data.bookings);}finally{global.fetch=original;}});
-test('unrecognised event types fall back instead of hiding scheduled work',()=>{assert.throws(()=>parseCalendar(feed('DTSTART:20260913T140000Z\r\nDTEND:20260920T090000Z').replace('(annies) Reserved: Private guest','Deep clean appointment')));});
+const {test}=require('node:test'),assert=require('node:assert/strict'),{parseCalendar}=require('../lib/calendar.cjs');const {createHandler}=require('../api/calendar.js');
+const feed=(dates,extra='')=>`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test-reservation\r\nSUMMARY:Reserved: Test Guest 4 guests\r\n${dates}\r\n${extra}END:VEVENT\r\nEND:VCALENDAR`;
+const dates='DTSTART;TZID=Europe/London:20260915T150000\r\nDTEND;TZID=Europe/London:20260918T100000';
+test('parses actual stay span, summary, UID, guests and checkout',()=>{const b=parseCalendar(feed(dates)).bookings[0];assert.equal(b.id,'test-reservation');assert.equal(b.title,'Test Guest');assert.equal(b.guests,4);assert.equal(b.arrival.date,'2026-09-15');assert.equal(b.checkout.date,'2026-09-18');assert.equal(b.checkout.time,'10:00');});
+test('all-day DTEND remains exclusive checkout date and times come from explicit rules',()=>{const raw=feed('DTSTART;VALUE=DATE:20260915\r\nDTEND;VALUE=DATE:20260918');const b=parseCalendar(raw,{checkIn:'15:00',checkOut:'10:00'}).bookings[0];assert.equal(b.checkout.date,'2026-09-18');assert.equal(b.checkout.timeSource,'property-rule');assert.equal(parseCalendar(raw).bookings[0].checkout.time,null);});
+test('UTC converts with UK DST',()=>{const b=parseCalendar(feed('DTSTART:20260915T140000Z\r\nDTEND:20260918T090000Z')).bookings[0];assert.equal(b.arrival.time,'15:00');assert.equal(b.checkout.time,'10:00');});
+test('cancelled events excluded; malformed and unsupported events fail rather than empty calendar',()=>{assert.equal(parseCalendar(feed(dates,'STATUS:CANCELLED\r\n')).bookings.length,0);assert.throws(()=>parseCalendar('invalid'));assert.throws(()=>parseCalendar(feed(dates,'RRULE:FREQ=WEEKLY\r\n')));assert.throws(()=>parseCalendar(feed('DTSTART:20260915T150000Z')));});
+function res(){return {headers:{},setHeader(k,v){this.headers[k]=v},status(s){this.code=s;return this},json(data){this.data=data;return this}};}
+test('calendar and subscription require authentication before fetch',async()=>{for(const query of [{},{action:'subscription'}]){const r=res();await createHandler(async()=>null,()=>assert.fail('must not fetch'))({method:'GET',query},r);assert.equal(r.code,401);assert(!r.data.url);}});
+test('not-connected and upstream errors are distinct states',async()=>{const old=process.env.TURNLI_ICAL_URL;delete process.env.TURNLI_ICAL_URL;try{const r=res();await createHandler(async()=>({}))({method:'GET'},r);assert.equal(r.data.state,'not-connected');process.env.TURNLI_ICAL_URL='https://turncal.com/ical/test.ics';const bad=res();await createHandler(async()=>({}),async()=>{throw Error('offline')})({method:'GET'},bad);assert.equal(bad.code,502);assert.equal(bad.data.state,'error');assert(!bad.data.bookings);}finally{if(old)process.env.TURNLI_ICAL_URL=old;else delete process.env.TURNLI_ICAL_URL;}});

@@ -1,11 +1,59 @@
 {
-  "$schema":"https://openapi.vercel.sh/vercel.json",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand":"npm run build",
-  "installCommand":"npm ci",
-  "outputDirectory":"public",
-  "headers":[
-    {"source":"/(.*)","headers":[{"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive, nosnippet, noimageindex"}]},
-    {"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache"}]}
-  ]
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "outputDirectory": "public",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet, noimageindex"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/api/app"
+    }
+  ],
+  "functions": {
+    "api/app.js": {
+      "includeFiles": "private/dashboard.enc"
+    }
+  }
 }
