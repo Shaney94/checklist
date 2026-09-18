@@ -12,3 +12,4 @@ test('encrypted dashboard rejects an incorrect key or modified content',()=>{
  assert.throws(()=>decryptDashboard(data,crypto.randomBytes(32).toString('base64')));
  content[0]^=1;assert.throws(()=>decryptDashboard({...data,content:content.toString('base64')},key.toString('base64')));
 });
+test('new registrants receive a separate template without legacy property content',async()=>{const r=res();await createApp(async()=>({legacyAccess:false}))({method:'GET'},r);assert.equal(r.code,200);assert(r.data.includes('Turnli Cleaning Calendar'));assert(!r.data.includes('turncal.com/a/'));assert(!r.data.includes('openChecklist'));assert(!r.data.includes('HOST_WHATSAPP'));assert(!r.data.includes('id="faqView"'));});

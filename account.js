@@ -6,7 +6,7 @@
  document.getElementById('profileButton').addEventListener('click',()=>open(false));document.getElementById('inviteCustomers').addEventListener('click',()=>open(true));
  invite.addEventListener('submit',async event=>{event.preventDefault();const b=invite.querySelector('button');b.disabled=true;message.textContent='';try{const result=await request({action:'invite',email:document.getElementById('customerEmail').value.trim()});if(!result.sent)throw Error('Invitation could not be confirmed.');invite.hidden=true;profile.hidden=false;title.textContent='Invitation sent';profile.querySelector('p').textContent='Your customer will receive an email inviting them to join Turnli.';title.focus();invite.reset();}catch(error){message.textContent=error.message;}finally{b.disabled=false;}});
  async function signOut(event){const b=event.currentTarget;b.disabled=true;try{await request({action:'logout'});try{localStorage.setItem('turnli-signout',String(Date.now()));}catch{}document.body.classList.add('session-checking');location.replace('/');}catch(error){if(!dialog.open)open(false);message.textContent=error.message;b.disabled=false;}}
- document.getElementById('headerSignOut').addEventListener('click',signOut);document.getElementById('signOutButton').addEventListener('click',signOut);
+ document.getElementById('signOutButton').addEventListener('click',signOut);
  dialog.addEventListener('close',()=>{if(returnFocus?.isConnected&&!returnFocus.closest('.hidden'))returnFocus.focus();});
  request().then(data=>renderUser(data.user)).catch(()=>location.replace('/?next='+encodeURIComponent('/app'+location.hash)));
 })();

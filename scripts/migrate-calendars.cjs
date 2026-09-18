@@ -1,0 +1,2 @@
+const fs=require('node:fs');const {database}=require('../lib/calendar-store.cjs');
+(async()=>{const db=database();for(const query of fs.readFileSync('migrations/001-calendars.sql','utf8').split(';').map(s=>s.trim()).filter(Boolean))await db.query(query);console.log('Calendar schema ready.');})().catch(()=>{console.error('Calendar migration failed; inspect database configuration.');process.exitCode=1;});

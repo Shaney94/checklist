@@ -53,7 +53,19 @@
   ],
   "functions": {
     "api/app.js": {
-      "includeFiles": "private/dashboard.enc"
+      "includeFiles": "private/*"
+    },
+    "api/calendar.js": {
+      "maxDuration": 300
+    },
+    "api/cron/calendars.js": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/calendars",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
