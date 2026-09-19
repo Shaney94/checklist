@@ -4,6 +4,7 @@ export type User = {
   canInvite: boolean;
   legacyAccess: boolean;
   workspaceId: string;
+  role: "host" | "cleaner" | null;
 };
 export type RichNode =
   | string

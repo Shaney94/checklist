@@ -1,15 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser } from "../lib/account.cjs";
+import { workspaceRoute } from "../lib/authorization.cjs";
 import { adapt } from "./server/route-adapter";
 
-const authenticate = adapt(async (req, res) => {
+const authenticate = (path: string) => adapt(async (req, res) => {
   try {
     const user = await currentUser(req, res);
     if (!user) {
-      res.setHeader("Location", "/?next=%2Fapp");
+      res.setHeader("Location", "/?next=" + encodeURIComponent(path));
       return res.status(303).end();
     }
-    res.end();
+    const access = workspaceRoute(user, path);
+    if (access.location) res.setHeader("Location", access.location);
+    res.status(access.status).end(access.error);
   } catch {
     res
       .status(503)
@@ -18,7 +21,8 @@ const authenticate = adapt(async (req, res) => {
 });
 export async function proxy(request: NextRequest) {
   const auth =
-    request.nextUrl.pathname === "/app" ? await authenticate(request) : null;
+    request.nextUrl.pathname === "/app" || request.nextUrl.pathname.startsWith("/app/")
+      ? await authenticate(request.nextUrl.pathname)(request) : null;
   if (auth && auth.status !== 200) {
     if (auth.headers.has("Location"))
       auth.headers.set(
@@ -37,4 +41,4 @@ export async function proxy(request: NextRequest) {
     response.headers.append("Set-Cookie", cookie);
   return response;
 }
-export const config = { matcher: ["/", "/app"] };
+export const config = { matcher: ["/", "/app/:path*"] };

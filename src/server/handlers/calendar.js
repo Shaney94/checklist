@@ -1,3 +1,4 @@
+const {can}=require('../../../lib/authorization.cjs');
 const {currentUser,privateHeaders,validOrigin}=require('../../../lib/account.cjs');
 const {createStore,metadata,unseal}=require('../../../lib/calendar-store.cjs');
 const {input,validate,syncMany}=require('../../../lib/calendar-sync.cjs');
@@ -11,7 +12,9 @@ function createHandler(authenticate=currentUser,getStore=createStore,fetchFeed,g
  if(req.method==='POST'&&(!validOrigin(req)||!String(req.headers['content-type']).startsWith('application/json')))return res.status(403).json({error:'Please use the Turnli website.'});
  try{
   const user=await authenticate(req,res);if(!user)return res.status(401).json({error:'Please log in to view your calendar.'});
-  const owner=user.workspaceId;if(!owner)return res.status(403).json({error:'Workspace unavailable.'});const store=getStore();
+  const permission=req.method==='GET'||req.body?.action==='seen'?'calendar.read':'calendar.manage';
+  if(!can(user,permission))return res.status(403).json({error:'You do not have permission to access these calendars.'});
+  const owner=user.workspaceId;const store=getStore();
   if(req.method==='GET'){
    const rows=await store.list(owner);
    if(req.query?.action==='subscription'){

@@ -2,6 +2,11 @@
 import type { Booking } from "../dashboard/types";
 const day = 86400000,
   date = (d: string) => new Date(d + "T12:00:00Z");
+export function timezoneLabel(start: string, end = start, timeZone = "Europe/London") {
+  const formatter = new Intl.DateTimeFormat("en-GB", { timeZone, timeZoneName: "short" });
+  const zone = (value: string) => formatter.formatToParts(date(value)).find((p) => p.type === "timeZoneName")?.value || timeZone;
+  return [...new Set([zone(start), zone(end)])].join(" / ");
+}
 export function segments<
   T extends Pick<Booking, "id" | "arrival" | "checkout">,
 >(bookings: T[], weekStart: string) {

@@ -21,6 +21,8 @@ export async function login(
 }
 export async function fixtures(page: Page) {
   let revision = 0;
+  let sidebarCollapsed = false;
+  let seen = false;
   const property = {
     id: "property-1",
     name: "Test property",
@@ -45,14 +47,16 @@ export async function fixtures(page: Page) {
   ];
   const actions: string[] = [];
   await page.route("**/api/dashboard?*", (r) =>
-    r.fulfill({ json: { sidebarCollapsed: false } }),
+    r.fulfill({ json: { sidebarCollapsed } }),
   );
   await page.route("**/api/dashboard", async (r) => {
     if (r.request().method() === "POST") {
       const b = r.request().postDataJSON();
       actions.push(b.action);
-      if (b.action === "preferences")
-        return r.fulfill({ json: { sidebarCollapsed: b.sidebarCollapsed } });
+      if (b.action === "preferences") {
+        sidebarCollapsed = b.sidebarCollapsed;
+        return r.fulfill({ json: { sidebarCollapsed } });
+      }
       expect(b.revision).toBe(revision);
       revision++;
       if (b.action === "check")
@@ -78,6 +82,7 @@ export async function fixtures(page: Page) {
     if (r.request().method() === "POST") {
       const b = r.request().postDataJSON();
       actions.push(b.action);
+      if (b.action === "seen") seen = true;
       if (b.action === "update")
         calendars = calendars.map((c) => c.id === b.id ? ({
           ...c,
@@ -113,7 +118,7 @@ export async function fixtures(page: Page) {
                 source: "Airbnb",
                 sourceKey: "airbnb",
                 guests: 3,
-                isNew: true,
+                isNew: !seen,
                 arrival: { date: month + "-03", time: "15:00" },
                 checkout: { date: month + "-18", time: "10:00" },
               },

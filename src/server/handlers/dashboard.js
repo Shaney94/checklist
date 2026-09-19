@@ -1,3 +1,4 @@
+const {can,dashboardPermission}=require('../../../lib/authorization.cjs');
 const {createStore:createUIStore}=require('../../../lib/workspace-ui-store.cjs');
 const {randomUUID}=require('node:crypto');
 const {currentUser,privateHeaders,validOrigin}=require('../../../lib/account.cjs');
@@ -37,15 +38,16 @@ function createHandler(authenticate=currentUser,getStore=createStore,getUIStore=
  if(!['GET','POST'].includes(req.method)){res.setHeader('Allow','GET, POST');return res.status(405).json({error:'Method not allowed.'});}
  if(req.method==='POST'&&(!validOrigin(req)||!String(req.headers['content-type']).startsWith('application/json')))return res.status(403).json({error:'Please use the Turnli website.'});
  try{
-  const user=await authenticate(req,res);if(!user)return res.status(401).json({error:'Please log in.'});if(!user.workspaceId)return res.status(403).json({error:'Workspace unavailable.'});
+  const user=await authenticate(req,res);if(!user)return res.status(401).json({error:'Please log in.'});if(!can(user,req.method==='GET'?'workspace.read':dashboardPermission(req.body?.action)))return res.status(403).json({error:'You do not have permission to access these workspace tools.'});
   if(req.query?.action==='preferences'||req.body?.action==='preferences'){
    if(!user.id)return res.status(403).json({error:'Account unavailable.'});
    if(req.method==='GET')return res.status(200).json(await getUIStore().preferences(user.workspaceId,user.id));
    if(typeof req.body.sidebarCollapsed!=='boolean')return res.status(400).json({error:'Invalid preference.'});
    return res.status(200).json(await getUIStore().savePreferences(user.workspaceId,user.id,req.body.sidebarCollapsed));
   }
-  const store=getStore(),saved=await store.load(user.workspaceId);if(req.method==='GET'){if(saved.data.legacyProgress)for(const k of Object.keys(saved.data.legacyProgress))saved.data.legacyProgress[k]={checked:saved.data.legacyProgress[k].checked||[]};return res.status(200).json(saved);}
+  const store=getStore(),saved=await store.load(user.workspaceId);if(req.method==='GET'){if(!user.legacyAccess)delete saved.data.legacyProgress;if(saved.data.legacyProgress)for(const k of Object.keys(saved.data.legacyProgress))saved.data.legacyProgress[k]={checked:saved.data.legacyProgress[k].checked||[]};return res.status(200).json(saved);}
   const b=req.body;if(!b||JSON.stringify(b).length>150000||!Number.isInteger(b.revision))return res.status(400).json({error:'Invalid request.'});
+  if(b.id&&!saved.data.properties.some(p=>p.id===b.id))return res.status(404).json({error:'Property not found.'});
   if(b.revision!==saved.revision)return res.status(409).json({error:'This workspace changed in another tab. Reload it before saving.'});
   if(b.action==='legacy-progress'&&!user.legacyAccess)return res.status(403).json({error:'These checklists are not part of this workspace.'});
   let data;try{data=change(saved.data,b);}catch{return res.status(400).json({error:'Check the property and all required fields, then try again.'});}

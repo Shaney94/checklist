@@ -24,7 +24,11 @@ export default function Reminder({
     pausedRef = useRef(paused);
   pausedRef.current = paused;
   useEffect(() => {
-    setPaused(matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => { setPaused(media.matches); setFading(false); };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
@@ -74,7 +78,7 @@ export default function Reminder({
           {paused ? "Resume reminders" : "Pause reminders"}
         </button>
       </div>
-      {content ? (
+      {content?.reminders.length ? (
         <div className="reminders" role="region" aria-label="Cleaner reminders">
           <p className={"reminder active" + (fading ? " fading" : "")}>
             <RichText nodes={content.reminders[index]} />

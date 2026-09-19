@@ -11,13 +11,14 @@ const jwk = {
   alg: "RS256",
   use: "sig",
 };
-function token(exp) {
+function token(exp, testRole) {
   const header = Buffer.from(
       JSON.stringify({ alg: "RS256", kid: "fixture" }),
     ).toString("base64url"),
     body = Buffer.from(
       JSON.stringify({
         sub: "browser-fixture",
+        testRole,
         iss: "turnli-browser-test",
         iat: Math.floor(Date.now() / 1000),
         exp,
@@ -38,12 +39,19 @@ const server = http.createServer((req, res) => {
   res.setHeader("Content-Type", "application/json");
   if (req.url.startsWith("/v2/keys/"))
     return res.end(JSON.stringify({ keys: [jwk] }));
-  if (req.url === "/tokens")
+  const url = new URL(req.url, "http://127.0.0.1:3101");
+  const testRole = url.searchParams.get("role") || undefined;
+  let providerRole;
+  try {
+    const jwt = String(req.headers.authorization).match(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)[0];
+    providerRole = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url")).testRole;
+  } catch {}
+  if (url.pathname === "/tokens")
     return res.end(
       JSON.stringify({
-        session: token(now() + 600),
-        expired: token(now() - 100),
-        refresh: token(now() + 3600),
+        session: token(now() + 600, testRole),
+        expired: token(now() - 100, testRole),
+        refresh: token(now() + 3600, testRole),
       }),
     );
   if (req.url === "/v1/auth/me")
@@ -53,13 +61,14 @@ const server = http.createServer((req, res) => {
         email: "fixture@example.com",
         verifiedEmail: true,
         status: "enabled",
+        roleNames: providerRole ? ["turnli-" + providerRole] : [],
       }),
     );
   if (req.url === "/v1/auth/refresh")
     return res.end(
       JSON.stringify({
-        sessionJwt: token(now() + 600),
-        refreshJwt: token(now() + 3600),
+        sessionJwt: token(now() + 600, providerRole),
+        refreshJwt: token(now() + 3600, providerRole),
       }),
     );
   if (req.url === "/v1/auth/password/policy")

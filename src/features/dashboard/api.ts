@@ -19,7 +19,7 @@ export async function request<T>(
     signal: signal || AbortSignal.timeout(20000),
   });
   if (r.status === 401) {
-    location.replace("/?next=" + encodeURIComponent("/app" + location.hash));
+    location.replace("/?next=" + encodeURIComponent(location.pathname + location.hash));
     throw new APIError("Please log in again.", 401);
   }
   const data = await r.json();

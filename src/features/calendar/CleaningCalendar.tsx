@@ -3,7 +3,7 @@ import { useState } from "react";
 import Dialog from "../../components/Dialog";
 import type { Booking, PrivateContent } from "../dashboard/types";
 import { whatsapp } from "../dashboard/api";
-import { segments } from "./layout";
+import { segments, timezoneLabel } from "./layout";
 import { date, iso, today, full, type CalendarModel } from "./useCalendar";
 import CalendarManagement from "./CalendarManagement";
 export default function CleaningCalendar({
@@ -30,13 +30,8 @@ export default function CleaningCalendar({
   const time = (b: Booking["arrival"]) => b.time || "Time not provided";
   const label = (b: Booking) =>
     `${b.property} · ${b.source || "Reservation"} · Check-in ${full(b.arrival.date)} ${time(b.arrival)} · Check-out ${full(b.checkout.date)} ${time(b.checkout)}${b.guests ? " · " + b.guests + " guests" : ""}`;
-  const zone =
-    new Intl.DateTimeFormat("en-GB", {
-      timeZone: m.zone,
-      timeZoneName: "short",
-    })
-      .formatToParts(new Date())
-      .find((p) => p.type === "timeZoneName")?.value || m.zone;
+  const monthEnd = iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 12)));
+  const zone = timezoneLabel(m.month, monthEnd, m.zone);
   return (
     <>
       <section
@@ -145,8 +140,8 @@ export default function CleaningCalendar({
               <button className="back" disabled={m.busy} onClick={m.goToday}>
                 Today
               </button>
-              <span className="calendar-zone">
-                {m.zone === "Europe/London" ? "UK" : "Local"} · {zone}
+              <span className="calendar-zone" title={m.zone}>
+                {zone}
               </span>
             </div>
             <div className="calendar-weekdays" aria-hidden="true">
@@ -176,6 +171,7 @@ export default function CleaningCalendar({
                                   ? "outside-month "
                                   : "") + (now ? "is-today" : "")
                               }
+                              aria-label={full(iso(day))}
                               aria-current={now ? "date" : undefined}
                             >
                               {day.getUTCDate()}
@@ -203,9 +199,6 @@ export default function CleaningCalendar({
                                     ? " continues-before"
                                     : "") +
                                   (s.continuesAfter ? " continues-after" : "") +
-                                  (s.continuesAfter && !s.continuesBefore
-                                    ? " first-continues"
-                                    : "") +
                                   (m.newIDs.includes(b.id)
                                     ? " booking-new"
                                     : "")
@@ -223,45 +216,29 @@ export default function CleaningCalendar({
                                 }}
                               >
                                 <span className="stay-normal">
-                                  <span className="stay-start">
-                                    {s.continuesBefore ? (
-                                      <span className="continuation-arrow" />
-                                    ) : (
-                                      <>
-                                        {b.arrival.time || "—"}
-                                        <span className="time-caption">
-                                          {" "}
-                                          Check-in
-                                        </span>
-                                      </>
-                                    )}
-                                  </span>
-                                  <span className="stay-guests">
-                                    <span className="guest-number">
-                                      {b.guests || "Stay"}
+                                  {!s.continuesBefore && (
+                                    <span className="stay-start">
+                                      {b.arrival.time || "—"}
+                                      <span className="time-caption"> Check-in</span>
                                     </span>
+                                  )}
+                                  <span className="stay-summary">
+                                    <span className="stay-property">{b.property}</span>
+                                    {b.source && <span className="stay-source">{b.source}</span>}
                                     {!!b.guests && (
-                                      <span className="guest-word">
-                                        {" "}
-                                        guests
+                                      <span className="stay-guests">
+                                        {b.guests}<span className="guest-word"> {b.guests === 1 ? "guest" : "guests"}</span>
                                       </span>
                                     )}
+                                    {!b.guests && <span className="stay-fallback">Stay</span>}
                                   </span>
-                                  <span className="stay-end">
-                                    {s.continuesAfter ? (
-                                      <span className="continuation-arrow">
-                                        {!s.continuesBefore ? "↳" : ""}
-                                      </span>
-                                    ) : (
-                                      <>
-                                        {b.checkout.time || "—"}
-                                        <span className="time-caption">
-                                          {" "}
-                                          Check-out
-                                        </span>
-                                      </>
-                                    )}
-                                  </span>
+                                  {!s.continuesAfter && (
+                                    <span className="stay-end">
+                                      {b.checkout.time || "—"}
+                                      <span className="time-caption"> Checkout</span>
+                                    </span>
+                                  )}
+                                  {s.continuesAfter && <span className="continuation-arrow" aria-hidden="true">↳</span>}
                                 </span>
                                 <span className="new-booking-label">
                                   New booking
@@ -333,10 +310,11 @@ export default function CleaningCalendar({
               )}
             </div>
             <p>
+              <span title="Timezone">{m.zone}</span>
               {booking.arrival.timeSource === "property-rule" ||
               booking.checkout.timeSource === "property-rule"
-                ? "Times use this property’s check-in/checkout settings because the iCal feed supplies dates only. UK time."
-                : "All times are UK time."}
+                ? " · Property default times · Date-only feed"
+                : ""}
             </p>
             {booking.canContactHost &&
               content?.hostPhone &&

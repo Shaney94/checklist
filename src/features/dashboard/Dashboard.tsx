@@ -12,8 +12,10 @@ import OriginalTools from "./OriginalTools";
 import Sidebar, { Icon } from "./Sidebar";
 import Account from "./Account";
 import Reminder from "./Reminder";
+import HostWorkspace from "../host/HostWorkspace";
+import { can } from "../../../lib/authorization.cjs";
 type Bootstrap = { user: User; content: PrivateContent | null };
-export default function Dashboard() {
+export default function Dashboard({ hostSection = "properties" }: { hostSection?: string }) {
   const [data, setData] = useState<Bootstrap | null>(null),
     [error, setError] = useState("");
   const current = useRef(data);
@@ -41,7 +43,8 @@ export default function Dashboard() {
           current.current &&
           (result.user.id !== current.current.user.id ||
             result.user.workspaceId !== current.current.user.workspaceId ||
-            result.user.legacyAccess !== current.current.user.legacyAccess)
+            result.user.legacyAccess !== current.current.user.legacyAccess ||
+            result.user.role !== current.current.user.role)
         ) {
           document.body.classList.add("session-checking");
           location.reload();
@@ -51,7 +54,7 @@ export default function Dashboard() {
       } catch {
         document.body.classList.add("session-checking");
         location.replace(
-          "/?next=" + encodeURIComponent("/app" + location.hash),
+          "/?next=" + encodeURIComponent(location.pathname + location.hash),
         );
       } finally {
         checking = false;
@@ -80,7 +83,9 @@ export default function Dashboard() {
     };
   }, []);
   return data ? (
-    <Workbench data={data} />
+    can(data.user, "host.view") ? <HostWorkspace user={data.user} section={hostSection} /> :
+    can(data.user, "cleaner.view") ? <Workbench data={data} /> :
+    <div className="wrap"><p role="alert">Workspace role unavailable or unsupported.</p><Account user={data.user} /></div>
   ) : (
     <div className="wrap">
       <p role="status">{error || "Loading your workspace…"}</p>

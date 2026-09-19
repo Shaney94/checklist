@@ -15,3 +15,27 @@
 @media(prefers-reduced-motion:reduce){.booking-new .mobile-source,.booking-new .mobile-guests{animation:none!important}.booking-new .mobile-new{display:none!important}}
 .week-dates{gap:4px;margin-bottom:5px}.week-dates>span{border:1px solid #e0e8e3;border-radius:6px;background:#f9fbfa;padding:5px;min-height:28px}.week-dates>span.is-today{border:2px solid var(--accent);background:#e4f3e9;padding:4px}.calendar-status:empty{display:none}.calendar-zone{font-size:11px;color:var(--muted);white-space:nowrap;margin-left:4px}.stay-bar .stay-guests .guest-number,.stay-bar .stay-guests .guest-word{display:inline;font-size:inherit}.stay-bar.continues-before .stay-start:empty,.stay-bar.continues-after .stay-end:empty{display:none}@container(max-width:70px){.stay-bar .guest-word{display:none!important}.stay-bar .stay-start,.stay-bar .stay-end{display:none!important}.stay-bar{padding:4px 2px}}@media(max-width:700px){.desktop-month{display:block!important}.mobile-month{display:none!important}.booking-week{min-height:70px;padding-top:3px}.week-dates{gap:3px}.week-dates>span{font-size:10px;padding:4px 0;min-height:25px}.week-stays{gap:4px 1px}.stay-bar{min-height:25px;height:25px;padding:4px 3px}.stay-bar .stay-guests{font-size:10px}.calendar-zone{font-size:10px;margin:0}.month-toolbar{flex-wrap:wrap}.month-toolbar .calendar-zone{flex-basis:100%;text-align:right}.calendar-days{margin:0 6px 10px}}
 @container(max-width:70px){.stay-bar.first-continues:after{content:'↳';position:absolute;right:1px;top:2px;font-size:8px}.stay-bar.first-continues{padding-right:6px}}
+
+/* One continuous reservation segment per week, at every viewport size. */
+.booking-week{position:relative;padding:0 0 8px;border-top:0;min-height:86px;margin-bottom:4px}
+.week-dates{position:absolute;inset:0;margin:0;pointer-events:none}
+.week-dates>span{padding:6px 0;background:#f9fbfa;border:1px solid #e0e8e3;border-radius:7px}
+.week-dates>span.is-today{padding:5px 0;background:#edf7f0}
+.week-stays{position:relative;padding-top:34px;margin-top:0;min-height:78px;align-content:start}
+.stay-bar{height:30px;min-height:30px}
+.stay-bar .stay-normal{gap:5px;opacity:1;animation:none}
+.stay-bar .stay-summary{display:flex;flex:1;align-items:center;justify-content:center;gap:6px;min-width:0}
+.stay-bar .stay-property{display:none}
+.stay-bar .stay-source{display:block;min-width:0;text-overflow:ellipsis}
+.stay-bar .stay-guests{flex:0 0 auto}
+.stay-bar .stay-fallback{display:none}
+.stay-bar .stay-summary:not(:has(.stay-source)) .stay-fallback{display:block}
+.stay-bar .guest-word{display:inline;font-size:inherit}
+.stay-bar .continuation-arrow{display:block;flex:none;font-size:11px}
+.stay-bar .new-booking-label{display:none!important}
+.booking-new{box-shadow:inset 0 0 0 1px #ffffffa0}
+@container(min-width:440px){.stay-bar .stay-property{display:block;max-width:35%;text-overflow:ellipsis}}
+@container(max-width:180px){.stay-bar .stay-source{display:none}.stay-bar .stay-fallback{display:block}.stay-bar .stay-start,.stay-bar .stay-end{display:block;font-size:10px}.stay-bar .stay-guests .guest-word{display:none}.stay-bar .stay-summary{gap:0}}
+@container(max-width:100px){.stay-bar .stay-start,.stay-bar .stay-end{display:none}.stay-bar{padding:4px 2px}}
+@media(max-width:700px){.booking-week{min-height:78px}.week-stays{padding-top:30px;min-height:70px;gap:4px 1px}.stay-bar{height:30px;min-height:30px}.week-dates>span{padding-top:5px}.week-dates>span.is-today{padding-top:4px}}
+@media(prefers-reduced-motion:reduce){.booking-new{outline:1px solid #58a681;outline-offset:1px}}

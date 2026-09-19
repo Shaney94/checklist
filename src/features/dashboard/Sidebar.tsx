@@ -2,8 +2,9 @@
 import {
   useEffect,
   useState,
+  useRef,
   type ReactNode,
-  type MouseEvent,
+  type PointerEvent,
   type FocusEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -63,11 +64,13 @@ export default function Sidebar({
       top: number;
       left: number;
     } | null>(null);
+  const preferenceChanged = useRef(false);
+  const tipTarget = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     let alive = true;
     request<{ sidebarCollapsed: boolean }>("/api/dashboard?action=preferences")
       .then((p) => {
-        if (alive) setCollapsed(p.sidebarCollapsed === true);
+        if (alive && !preferenceChanged.current) setCollapsed(p.sidebarCollapsed === true);
       })
       .catch(() => {});
     return () => {
@@ -79,20 +82,31 @@ export default function Sidebar({
     return () => document.body.classList.remove("sidebar-collapsed");
   }, [collapsed]);
   useEffect(() => {
-    const hide = () => setTip(null);
+    const hide = () => { tipTarget.current = null; setTip(null); };
+    const scroll = () => {
+      const target = tipTarget.current;
+      if (!target?.isConnected || !target.matches(":hover,:focus")) return hide();
+      const r = target.getBoundingClientRect();
+      setTip((tip) => tip ? {
+        ...tip,
+        left: Math.min(r.right + 10, innerWidth - 268),
+        top: Math.max(8, Math.min(r.top, innerHeight - 44)),
+      } : null);
+    };
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") hide();
     };
     window.addEventListener("resize", hide);
-    document.addEventListener("scroll", hide, true);
+    document.addEventListener("scroll", scroll, true);
     document.addEventListener("keydown", key);
     return () => {
       window.removeEventListener("resize", hide);
-      document.removeEventListener("scroll", hide, true);
+      document.removeEventListener("scroll", scroll, true);
       document.removeEventListener("keydown", key);
     };
   }, []);
   async function toggle() {
+    preferenceChanged.current = true;
     setTip(null);
     const next = !collapsed;
     setCollapsed(next);
@@ -111,10 +125,11 @@ export default function Sidebar({
     }
   }
   function show(
-    e: MouseEvent<HTMLButtonElement> | FocusEvent<HTMLButtonElement>,
+    e: PointerEvent<HTMLButtonElement> | FocusEvent<HTMLButtonElement>,
     label: string,
   ) {
     if (!collapsed || mobile) return;
+    tipTarget.current = e.currentTarget;
     const r = e.currentTarget.getBoundingClientRect();
     setTip({
       label,
@@ -135,13 +150,12 @@ export default function Sidebar({
         className={"nav-item" + (other.active ? " active" : "")}
         aria-current={other.active ? "page" : undefined}
         aria-label={label}
-        title={label}
         aria-describedby={tip?.label === label ? "sidebarTooltip" : undefined}
         disabled={other.disabled}
-        onClick={onClick}
-        onMouseEnter={(e) => show(e, label)}
+        onClick={() => { setTip(null); onClick(); }}
+        onPointerEnter={(e) => show(e, label)}
         onFocus={(e) => show(e, label)}
-        onMouseLeave={() => setTip(null)}
+        onPointerLeave={() => setTip(null)}
         onBlur={() => setTip(null)}
       >
         <Icon name={name} />
@@ -210,12 +224,6 @@ export default function Sidebar({
             Property setup
           </button>
         </div>
-        <p id="propertySummary" className="calendar-help">
-          {m.property
-            ? m.property.notes ||
-              "Your property’s cleaning tools are saved to this workspace."
-            : "Add your property, then set up its checklists and FAQs."}
-        </p>
       </div>
       <p id="workspaceStatus" role="status" aria-live="polite">
         {m.status}
