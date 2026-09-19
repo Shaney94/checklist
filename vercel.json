@@ -1,9 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
+  "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "outputDirectory": "public",
   "headers": [
     {
       "source": "/(.*)",
@@ -45,23 +44,6 @@
       ]
     }
   ],
-  "rewrites": [
-    {
-      "source": "/app",
-      "destination": "/api/app"
-    }
-  ],
-  "functions": {
-    "api/app.js": {
-      "includeFiles": "private/*"
-    },
-    "api/calendar.js": {
-      "maxDuration": 300
-    },
-    "api/cron/calendars.js": {
-      "maxDuration": 300
-    }
-  },
   "crons": [
     {
       "path": "/api/cron/calendars",

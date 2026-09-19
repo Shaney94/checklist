@@ -1,14 +1,14 @@
 # Turnli Cleaning Hub
 
-The existing HTML/CSS/JavaScript application runs on Vercel. GitHub `main` deploys to `https://turnli.vercel.app`. No framework is introduced; saved reservation snapshots are derived from the subscribed iCal feeds.
+Turnli now runs through Next.js App Router on Vercel. The login, authenticated dashboard and calendar UI use React/TypeScript, reusing the existing backend/domain logic. GitHub `main` deploys to `https://turnli.vercel.app`. Reservation snapshots still derive from the subscribed iCal feeds. See [migration status](docs/next-migration.md).
 
 ## Build and test
 
-Run `npm ci`, `npm test`, and `npm run build`. The build replaces the generated `public/` directory with an explicit public asset list. Vercel serves the account, calendar and private dashboard endpoints separately. GitHub Pages can only serve the public login shell; the application requires its Vercel endpoints.
+Use Node 24. Run `npm ci`, `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Use `npm run dev` for development or `npm start` after a production build. The asset preparation step replaces generated `public/` with an explicit asset allowlist; Next builds the routes into `.next/`. `npm run test:e2e` tests a production build with synthetic account responses (install Chromium with `npx playwright install chromium`, or set `PLAYWRIGHT_EXECUTABLE_PATH` to a local Chrome binary). The application requires a Node/Next deployment; GitHub Pages cannot serve it.
 
 ## Private dashboard source
 
-`/` is the public login page. `/app` is served by `api/app.js` only after the provider session and workspace membership are verified. The dashboard contains existing property instructions, so its versioned source is encrypted in `private/dashboard.enc`, outside the public build. The decryption key exists only in server environment variables.
+`/` is the public login page. `/app` is a React page guarded by the existing session verifier in the Node proxy. Original-workspace content is loaded through the authenticated, no-store `/api/dashboard-bootstrap` endpoint. Its structured data is encrypted in `private/cleaning-content.enc`, outside the public build. The decryption key exists only in server environment variables.
 
 To edit on a new trusted checkout, pull the Vercel development environment into ignored `.env.local`, then run:
 
@@ -16,7 +16,7 @@ To edit on a new trusted checkout, pull the Vercel development environment into 
 node --env-file=.env.local scripts/unseal-dashboard.cjs
 ```
 
-Edit the ignored `.private/dashboard.html`, then seal it before testing and committing:
+Edit the ignored `.private/cleaning-content.json`, then seal it before testing and committing:
 
 ```
 node --env-file=.env.local scripts/seal-dashboard.cjs
@@ -47,7 +47,7 @@ OTP requests expose useful failures, apply a 60-second resend cooldown, and resp
 
 ## Booking calendar
 
-The calendar endpoint reads persisted, sanitized reservation snapshots refreshed from each subscribed feed. Reservation bars span arrival through checkout; separate cleaning markers show the turnover after checkout. Mobile uses a chronological timeline. Details include available property, guest count, source and times.
+The calendar endpoint reads persisted, sanitized reservation snapshots refreshed from each subscribed feed. Reservation bars span arrival through checkout; separate cleaning markers show the turnover after checkout. Mobile retains continuous multi-day reservation bars. Details include available property, guest count, source and times.
 
 All-day `DTEND` is exclusive and denotes checkout day. Check-in/checkout times applied to all-day events are explicitly labelled property rules, not feed data or promised cleaning start times. UTC timestamps are converted to Europe/London. Unsupported recurring/timezone formats produce a visible error and retain the original embedded calendar fallback. Loading, empty, disconnected and retry states are distinct.
 
@@ -55,13 +55,13 @@ Subscription URLs are returned only to authenticated owners/workspace members, a
 
 ## PWA and privacy
 
-The manifest and icons use Turnli branding. The service worker does not cache operational content. Checklist progress retains existing local storage keys. `robots.txt` and noindex settings are preserved; noindex is not a substitute for authentication.
+The manifest and icons use Turnli branding. The service worker does not cache operational content. Checklist progress remains persisted in the authenticated workspace. `robots.txt` and noindex settings are preserved; noindex is not a substitute for authentication.
 
 ## Registration and workspace isolation
 
 The login page offers Create an account separately from email-code login. Descope password signup is followed by email OTP verification; no application session cookie is issued until verification succeeds. Existing accounts can still use password or email-code login. Sign out is in Account and revokes the Descope refresh session.
 
-New verified accounts use a private workspace keyed by Descope user ID. They receive a safe, empty calendar dashboard (`private/personal.html`), not the original property's checklists, instructions or external calendar. Existing invited members retain the original shared organisation workspace. All subscription queries and mutations are scoped server-side to the workspace derived from the verified provider identity; client-provided owner IDs are never used.
+New verified accounts use a private workspace keyed by Descope user ID. They receive a safe, empty calendar dashboard (`content: null`), not the original property's checklists, instructions or external calendar. Existing invited members retain the original shared organisation workspace. All subscription queries and mutations are scoped server-side to the workspace derived from the verified provider identity; client-provided owner IDs are never used.
 
 ## Persistent calendar subscriptions
 

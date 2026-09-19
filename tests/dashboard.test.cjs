@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {createHandler,change}=require('../api/dashboard.js');
+const {createHandler,change}=require('../src/server/handlers/dashboard.js');
 const empty={properties:[]};
 function response(){return {headers:{},setHeader(k,v){this.headers[k]=v},status(c){this.code=c;return this},json(v){this.data=v;return this}};}
 const request=(body,method='POST')=>({method,body,headers:{origin:'https://turnli.vercel.app','content-type':'application/json'}});

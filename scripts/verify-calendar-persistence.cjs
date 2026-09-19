@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const {database,createStore}=require('../lib/calendar-store.cjs');
 const {syncOne,validate}=require('../lib/calendar-sync.cjs');
-const {createHandler}=require('../api/calendar');
+const {createHandler}=require('../src/server/handlers/calendar');
 const owner='test:'+randomUUID(),other='test:'+randomUUID();
 const event=(id,start,end,extra='')=>`BEGIN:VEVENT\r\nUID:${id}\r\nDTSTART;VALUE=DATE:${start}\r\nDTEND;VALUE=DATE:${end}\r\nSUMMARY:Reserved 2 guests\r\n${extra}END:VEVENT`;
 const feed=events=>'BEGIN:VCALENDAR\r\nVERSION:2.0\r\n'+events.join('\r\n')+'\r\nEND:VCALENDAR';

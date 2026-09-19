@@ -3,13 +3,31 @@
     "@descope/node-sdk": "^2.17.0",
     "@neondatabase/serverless": "^1.1.0",
     "ical.js": "^2.2.1",
-    "ipaddr.js": "^2.5.0"
+    "ipaddr.js": "^2.5.0",
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1"
   },
   "name": "turnly-cleaning-hub",
   "private": true,
   "scripts": {
-    "build": "node scripts/build.cjs",
+    "build": "node scripts/build.cjs && next build --webpack",
     "test": "node --test tests/*.test.cjs",
-    "lint": "node scripts/lint.cjs"
+    "lint": "node scripts/lint.cjs && tsc --noEmit",
+    "dev": "node scripts/build.cjs && next dev",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

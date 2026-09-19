@@ -1,4 +1,4 @@
-const {test}=require('node:test'),assert=require('node:assert/strict'),{parseCalendar}=require('../lib/calendar.cjs');const {createHandler}=require('../api/calendar.js');
+const {test}=require('node:test'),assert=require('node:assert/strict'),{parseCalendar}=require('../lib/calendar.cjs');const {createHandler}=require('../src/server/handlers/calendar.js');
 const feed=(dates,extra='')=>`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:test-reservation\r\nSUMMARY:Reserved: Test Guest 4 guests\r\n${dates}\r\n${extra}END:VEVENT\r\nEND:VCALENDAR`;
 const dates='DTSTART;TZID=Europe/London:20260915T150000\r\nDTEND;TZID=Europe/London:20260918T100000';
 test('parses actual stay span, summary, UID, guests and checkout',()=>{const b=parseCalendar(feed(dates)).bookings[0];assert.equal(b.id,require('node:crypto').createHash('sha256').update('test-reservation').digest('hex'));assert.equal(b.title,undefined);assert.equal(b.summary,undefined);assert(!JSON.stringify(b).includes('Test Guest'));assert.equal(b.guests,4);assert.equal(b.arrival.date,'2026-09-15');assert.equal(b.checkout.date,'2026-09-18');assert.equal(b.checkout.time,'10:00');});

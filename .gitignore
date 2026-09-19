@@ -5,3 +5,8 @@ node_modules/
 public/
 
 .private/
+
+.next/
+*.tsbuildinfo
+test-results/
+playwright-report/
