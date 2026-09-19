@@ -2,7 +2,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { request, message } from "../dashboard/api";
 import { useWorkspace } from "../dashboard/useWorkspace";
-import type { Job } from "./types";
+import Completion from "./Completion";
+import Dialog from "../../components/Dialog";
+import { stateLabels, type Job } from "./types";
 export default function HostJobs() {
   const m = useWorkspace();
   const [jobs, setJobs] = useState<Job[]>([]), [status, setStatus] = useState(""), [busy, setBusy] = useState(false);
@@ -36,14 +38,14 @@ export default function HostJobs() {
       <button className="primary" disabled={busy || !m.property}>Create cleaning job</button>
     </form>
     <label className="field">Filter jobs by property<input type="search" value={filter} onChange={e => setFilter(e.target.value)} /></label>
-    {jobs.filter(j => j.propertyName.toLowerCase().includes(filter.toLowerCase())).map(job => <JobCard key={job.id + job.revision} job={job} busy={busy} mutate={mutate} />)}
+    {jobs.filter(j => j.propertyName.toLowerCase().includes(filter.toLowerCase())).map(job => <JobCard key={job.id + job.revision} job={job} busy={busy} mutate={mutate} reload={() => void load()} />)}
     {!jobs.length && <p>No cleaning jobs yet.</p>}
   </div>;
 }
-function JobCard({ job, busy, mutate }: { job: Job; busy: boolean; mutate: (body: object) => Promise<boolean> }) {
-  const [code, setCode] = useState("");
+function JobCard({ job, busy, mutate, reload }: { job: Job; busy: boolean; mutate: (body: object) => Promise<boolean>; reload: () => void }) {
+  const [code, setCode] = useState(""), [completion, setCompletion] = useState(false);
   return <section className="section">
-    <h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean · {job.state === "cancelled" ? "Cancelled" : job.assigned ? "Cleaner assigned" : "Unassigned"}</p>
+    <h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean · {job.state !== "scheduled" ? stateLabels[job.state] : job.assigned ? "Cleaner assigned" : "Unassigned"}</p>
     {job.state === "scheduled" && <>
       <form autoComplete="off" onSubmit={async e => { e.preventDefault(); if (await mutate({ action: "assign", id: job.id, revision: job.revision, code: code.trim() })) setCode(""); }}>
         <label className="field">Private Cleaner assignment code<input required spellCheck={false} autoCapitalize="none" maxLength={43} value={code} onChange={e => setCode(e.target.value)} /></label>
@@ -52,5 +54,7 @@ function JobCard({ job, busy, mutate }: { job: Job; busy: boolean; mutate: (body
       {job.assigned && <button className="back" disabled={busy} onClick={() => void mutate({ action: "unassign", id: job.id, revision: job.revision })}>Remove assignment</button>}
       <button className="back" disabled={busy} onClick={() => { if (confirm("Cancel this job and remove Cleaner access?")) void mutate({ action: "cancel", id: job.id, revision: job.revision }); }}>Cancel job</button>
     </>}
+    {["awaiting_review", "approved", "issue_reported"].includes(job.state) && <button className="back" onClick={() => setCompletion(true)}>View completion</button>}
+    <Dialog id={"completion-" + job.id} title="Clean completion" open={completion} onClose={() => setCompletion(false)}>{completion && <Completion jobId={job.id} host onChanged={reload} />}<button className="back" onClick={() => setCompletion(false)}>Close</button></Dialog>
   </section>;
 }

@@ -8,6 +8,21 @@ test('verified new account receives only its own workspace',async()=>{const u=aw
 test('customer member cannot invite others',async()=>{const r=res();await createHandler(()=>sdk('customer@example.com'))(req({action:'invite',email:'other@example.com'}),r);assert.equal(r.code,403);});
 test('unverified owner cannot access private area',async()=>{const s=sdk();s.me=async()=>({ok:true,data:{email:OWNER_EMAIL,verifiedEmail:false}});assert.equal(await currentUser(req({}),res(),s),null);});
 test('cross-origin login is rejected before provider call',async()=>{const q=req({action:'password-login'});q.headers.origin='https://evil.example';const r=res();await createHandler(()=>assert.fail('provider called'))(q,r);assert.equal(r.code,403);});
+test('production and temporary fallback origins pass the centralized check',async()=>{
+ for(const origin of ['https://turnli.io','https://turnli.vercel.app']){
+  const q=req({action:'logout'});q.headers.origin=origin;const r=res();
+  await createHandler(()=>sdk())(q,r);assert.equal(r.code,200);assert.equal(r.data.ok,true);
+ }
+});
+test('origin allowlist rejects missing, unrelated, lookalike and preview origins before provider access',async()=>{
+ const previous=process.env.VERCEL_URL;process.env.VERCEL_URL='turnli-preview.vercel.app';
+ try{
+  for(const origin of [undefined,'null','https://evil.example','http://turnli.io','https://turnli.io:444','https://turnli.io.evil.example','https://sub.turnli.io','https://turnli.vercel.app.evil.example','https://turnli-preview.vercel.app']){
+   const q=req({action:'logout'});q.headers.origin=origin;const r=res();
+   await createHandler(()=>assert.fail('provider called'))(q,r);assert.equal(r.code,403,origin);
+  }
+ }finally{if(previous===undefined)delete process.env.VERCEL_URL;else process.env.VERCEL_URL=previous;}
+});
 test('invites grant only this workspace and no admin roles',async()=>{const s=sdk();s.management.user.invite=async(email,options)=>{assert.equal(email,'customer@example.com');assert.deepEqual(options.userTenants,[{tenantId:'test-workspace',roleNames:[]}]);assert.equal(options.roles,undefined);return {ok:true}};const r=res();await createHandler(()=>s)(req({action:'invite',email:'Customer@example.com'}),r);assert.deepEqual(r.data,{sent:true});});
 test('failed provider send never claims invitation sent',async()=>{const s=sdk();s.management.user.invite=async()=>({ok:false,code:500});const r=res();await createHandler(()=>s)(req({action:'invite',email:'customer@example.com'}),r);assert(!r.data.sent);});
 test('password login uses provider and only returns secure cookies, not tokens',async()=>{const s=sdk();s.password={signIn:async()=>({ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}})};const r=res();await createHandler(()=>s)(req({action:'password-login',email:OWNER_EMAIL,password:'test-password'}),r);assert.equal(r.code,200);assert(r.headers['Set-Cookie'].every(v=>v.includes('HttpOnly; Secure; SameSite=Lax')));assert(!JSON.stringify(r.data).includes('refresh'));});

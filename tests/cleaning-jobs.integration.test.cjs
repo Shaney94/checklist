@@ -7,7 +7,7 @@ const {database}=require('../lib/calendar-store.cjs');
 test('Neon: property ownership, persistent jobs/tasks/codes, assignment isolation and immediate guide revocation', {skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
  const db=database(),suffix=randomUUID(),owner='test-jobs:'+suffix,other='test-other:'+suffix,cleaner='test-cleaner:'+suffix,second='test-second:'+suffix;
  const propertyId=randomUUID(),foreignProperty=randomUUID(),store=createStore(db);
- const property=id=>({id,name:'Synthetic test property',phone:'PRIVATE',notes:'PRIVATE',regular:['Synthetic task'],deep:['Synthetic deep task'],faqs:[],checked:{regular:[],deep:[]}});
+ const property=id=>({id,name:'Synthetic test property',phone:'+447700900123',notes:'PRIVATE',regular:['Synthetic task'],deep:['Synthetic deep task'],faqs:[],checked:{regular:[],deep:[]}});
  try{
   await workspaces(db).save(owner,0,{properties:[property(propertyId)]});await workspaces(db).save(other,0,{properties:[property(foreignProperty)]});
   assert.equal(await store.create(owner,foreignProperty,'2026-09-22','regular'),undefined);
