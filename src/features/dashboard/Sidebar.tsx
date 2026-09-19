@@ -12,6 +12,7 @@ import type { Kind } from "./types";
 import type { WorkspaceModel } from "./useWorkspace";
 import type { CalendarModel } from "../calendar/useCalendar";
 import { labels } from "./WorkspaceTools";
+import Dialog from "../../components/Dialog";
 import { request } from "./api";
 const paths = {
   calendar: "M4 5h16v16H4z M8 2v6 M16 2v6 M4 10h16",
@@ -57,6 +58,7 @@ export default function Sidebar({
   toolsTarget: HTMLElement | null;
 }) {
   const [collapsed, setCollapsed] = useState(false),
+    [guideOpen, setGuideOpen] = useState(false),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(""),
     [tip, setTip] = useState<{
@@ -184,6 +186,8 @@ export default function Sidebar({
   );
   const secondary: ReactNode = (
     <div className="sidebar-secondary">
+      <p className="nav-group-label">Property guidance</p>
+      {button("faqs", "Start Guide", () => setGuideOpen(true))}
       <p className="nav-group-label">Calendar tools</p>
       {button("add", "Download Calendar", () => void calendar.download())}
       {button(
@@ -259,6 +263,13 @@ export default function Sidebar({
       </aside>
       {mobile && createPortal(navigation, document.body)}
       {mobile && toolsTarget && createPortal(secondary, toolsTarget)}
+      <Dialog id="startGuideDialog" title="Property Start Guide" open={guideOpen} onClose={() => setGuideOpen(false)}>
+        {guideOpen && <>
+          <p>{m.property?.name || "No property selected"}</p>
+          <p>Cleaner access requires verified authorization for this property or cleaning job. It is not available yet.</p>
+          <button className="back" onClick={() => setGuideOpen(false)}>Close</button>
+        </>}
+      </Dialog>
       {tip &&
         createPortal(
           <div

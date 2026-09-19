@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { hostSections } from "../../../lib/authorization.cjs";
+import HostGuides from "../start-guide/HostGuides";
 import Account from "../dashboard/Account";
 import { Icon } from "../dashboard/Sidebar";
 import type { User } from "../dashboard/types";
@@ -26,7 +27,7 @@ export default function HostWorkspace({ user, section }: { user: User; section: 
         </nav>
         <main className="workspace-main section" aria-labelledby="host-title">
           <h2 id="host-title">{selected ? hostSections[selected] : "Page unavailable"}</h2>
-          {selected === "settings" ? (
+          {selected === "cleaning-setup" ? <HostGuides /> : selected === "settings" ? (
             <p>Use Account to view your account, change your password or sign out. Workspace settings are not available yet.</p>
           ) : selected ? (
             <p>{hostSections[selected]} is not available yet in the Host Workspace.</p>
