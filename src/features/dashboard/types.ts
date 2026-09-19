@@ -29,6 +29,7 @@ export type Property = {
   deep: string[];
   faqs: { question: string; answer: string }[];
   checked: { regular: number[]; deep: number[] };
+  notApplicable?: { regular: number[]; deep: number[] };
 };
 export type Workspace = {
   revision: number;

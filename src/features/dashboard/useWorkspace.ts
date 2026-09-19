@@ -44,7 +44,16 @@ export function useWorkspace() {
     locked.current = true;
     setBusy(true);
     const optimistic = structuredClone(current.current);
-    if (body.action === "check") {
+    if (body.action === "applicability") {
+      const p = optimistic.data.properties.find(p => p.id === body.id);
+      if (p && (body.kind === "regular" || body.kind === "deep") && typeof body.index === "number") {
+        p.notApplicable ||= { regular: [], deep: [] };
+        const excluded = new Set(p.notApplicable[body.kind]);
+        body.applicable ? excluded.delete(body.index) : excluded.add(body.index);
+        p.notApplicable[body.kind] = [...excluded];
+        setState(optimistic);
+      }
+    } else if (body.action === "check") {
       const p = optimistic.data.properties.find((p) => p.id === body.id);
       if (
         p &&

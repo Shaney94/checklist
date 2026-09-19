@@ -18,6 +18,8 @@ export default function Login() {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
+  const invitationToken = useRef('');
+  const [hasInvitationLink, setHasInvitationLink] = useState(false);
   const [recovery, setRecovery] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [now, setNow] = useState(0);
@@ -31,11 +33,13 @@ export default function Login() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     destination.current = loginDestination(location.search, location.hash);
-    if (params.has('join')) setIntro('Welcome to Turnli. Use your invited email to log in. To create a password, choose Forgot password.');
+    const token = params.get('t');
+    if (token) { invitationToken.current = token; setHasInvitationLink(true); params.delete('t'); history.replaceState(null, '', location.pathname + '?' + params.toString()); }
+    if (params.has('join')) setIntro('Welcome to Turnli. Sign in with your invited email, then accept the property invitation in your workspace. You can set your own password using Forgot password.');
     if (params.has('reset')) setIntro('To set or change your password, enter your email and choose Forgot password. We’ll verify it with a code.');
     const controller = new AbortController();
     fetch('/api/account', { cache: 'no-store', credentials: 'same-origin', signal: controller.signal })
-      .then(r => r.json()).then(data => { if (data.user && !params.has('reset')) location.replace(destination.current); })
+      .then(r => r.json()).then(data => { if (data.user && !token && !params.has('reset')) location.replace(destination.current); })
       .catch(error => { if (error.name !== 'AbortError') setStatus('We couldn’t check your session. You can try logging in below.'); });
     fetch('/api/account?action=policy', { cache: 'no-store', signal: controller.signal })
       .then(r => r.json()).then(data => { if (data.policy) setPolicy(data.policy); }).catch(() => {});
@@ -125,6 +129,7 @@ export default function Login() {
     <div className="brand"><Image src="/icons/turnli.svg" alt="" width={44} height={44} unoptimized /><span>turnli</span></div>
     <section className="card" aria-labelledby="loginTitle" aria-busy={busy}>
       <h1 id="loginTitle">{title}</h1><p id="loginIntro">{description}</p>
+      {hasInvitationLink && <button className="primary" disabled={busy} onClick={() => void run(async () => { await requestAccount({ action: 'invite-login', token: invitationToken.current }); invitationToken.current = ''; setHasInvitationLink(false); location.replace(destination.current); })}>Continue with secure email link</button>}
       {screen === 'password' && <form id="passwordForm" onSubmit={login}>
         <label htmlFor="loginEmail">Email address</label><input ref={emailRef} id="loginEmail" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} />
         <label htmlFor="loginPassword">Password</label><input id="loginPassword" type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} />

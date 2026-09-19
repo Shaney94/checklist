@@ -1,5 +1,6 @@
 const {can,dashboardPermission,managedWorkspace}=require('../../../lib/authorization.cjs');
 const {createStore:createUIStore}=require('../../../lib/workspace-ui-store.cjs');
+const {templates}=require('../../../lib/checklist-templates.cjs');
 const {randomUUID}=require('node:crypto');
 const {currentUser,privateHeaders,validOrigin}=require('../../../lib/account.cjs');
 const {createStore}=require('../../../lib/dashboard-store.cjs');
@@ -16,14 +17,19 @@ function change(data,b){
   const name=text(b.name,100,true),phone=text(b.phone,30),notes=text(b.notes,3000);
   if(phone&&!/^\+?[\d ()-]{7,30}$/.test(phone))throw Error('Invalid phone');
   if(b.id&&!p)throw Error('Property not found');
-  if(!p){if(next.properties.length>=100)throw Error('Property limit reached');p={id:randomUUID(),regular:[],deep:[],faqs:[],checked:{regular:[],deep:[]}};next.properties.push(p);}
+  if(!p){if(next.properties.length>=100)throw Error('Property limit reached');p={id:randomUUID(),regular:[...templates.regular],deep:[...templates.deep],faqs:[],checked:{regular:[],deep:[]}};next.properties.push(p);}
   Object.assign(p,{name,phone,notes});
  }else{
   if(!p)throw Error('Property not found');
-  if(b.action==='content'){
+  if(b.action==='applicability'){
+   if(!['regular','deep'].includes(b.kind)||!Number.isInteger(b.index)||b.index<0||b.index>=p[b.kind].length||typeof b.applicable!=='boolean')throw Error('Invalid applicability');
+   p.notApplicable||={regular:[],deep:[]};const excluded=new Set(p.notApplicable[b.kind]||[]);b.applicable?excluded.delete(b.index):excluded.add(b.index);p.notApplicable[b.kind]=[...excluded];
+  }else if(b.action==='template'){
+   if(!['regular','deep'].includes(b.kind))throw Error('Invalid template');p[b.kind]=[...templates[b.kind]];p.checked[b.kind]=[];p.notApplicable||={regular:[],deep:[]};p.notApplicable[b.kind]=[];
+  }else if(b.action==='content'){
    if(!['regular','deep','faqs'].includes(b.kind)||!Array.isArray(b.items)||b.items.length>200)throw Error('Invalid content');
    if(b.kind==='faqs')p.faqs=b.items.map(f=>({question:text(f.question,300,true),answer:text(f.answer,3000,true)}));
-   else{p[b.kind]=b.items.map(i=>text(i,500,true));p.checked[b.kind]=[];}
+   else{p[b.kind]=b.items.map(i=>text(i,500,true));p.checked[b.kind]=[];if(p.notApplicable)p.notApplicable[b.kind]=[];}
   }else if(b.action==='check'){
    if(!['regular','deep'].includes(b.kind)||!Number.isInteger(b.index)||!p[b.kind][b.index]||typeof b.checked!=='boolean')throw Error('Invalid task');
    const checked=new Set(p.checked[b.kind]);b.checked?checked.add(b.index):checked.delete(b.index);p.checked[b.kind]=[...checked];

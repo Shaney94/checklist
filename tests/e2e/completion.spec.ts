@@ -25,6 +25,7 @@ test('Cleaner reviews required photos, submits once and can only read submitted 
     }
     return r.fulfill({ json: { ...job(), photos, submittedAt: state === 'scheduled' ? null : '2026-09-19T12:00:00Z', reviewedAt: null, reviewNote: null, requirements: { minPhotos: 3, maxPhotos: 6, maxUploadBytes: 3145728 } } });
   });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app#regular');
   await expect(page.getByRole('button', { name: 'Complete clean', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Can’t make this clean', exact: true }).click();
@@ -72,6 +73,7 @@ for (const decision of ['approve', 'issue'] as const) test(`Host can ${decision}
     }
     return r.fulfill({ json: { ...job(), tasks: ['Submitted task'], checked: [0], photos: [0, 1, 2].map(i => ({ id: `cccccccc-cccc-4ccc-8ccc-${String(i).padStart(12, '0')}`, width: 1, height: 1, size: pixel.length })), submittedAt: '2026-09-19T12:00:00Z', reviewedAt: state === 'awaiting_review' ? null : '2026-09-19T13:00:00Z', reviewNote, requirements: { minPhotos: 3, maxPhotos: 6, maxUploadBytes: 3145728 } } });
   });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app/host/cleaning-jobs');
   await page.getByRole('button', { name: 'View completion' }).click();
   const dialog = page.getByRole('dialog', { name: 'Clean completion' });

@@ -22,17 +22,13 @@ export async function request<T>(
     location.replace("/?next=" + encodeURIComponent(location.pathname + location.hash));
     throw new APIError("Please log in again.", 401);
   }
-  const data = await r.json();
+  const data = await r.json().catch(() => { throw new APIError("The service could not respond. Please try again shortly.", r.status); });
   if (!r.ok)
     throw new APIError(data.error || "Please try again shortly.", r.status);
   return data;
 }
 export const message = (e: unknown) =>
-  e instanceof Error
-    ? e.name === "TimeoutError"
-      ? "The request timed out. Please try again."
-      : e.message
-    : "Please try again.";
+  e instanceof APIError ? e.message : e instanceof Error && e.name === "TimeoutError" ? "The request timed out. Please try again." : "We couldn’t complete that request. Check your connection and try again.";
 export const whatsapp = (phone: string, text: string) =>
   "https://wa.me/" +
   phone.replace(/\D/g, "") +

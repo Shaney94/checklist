@@ -34,7 +34,7 @@ export default function HostJobs() {
       </select></label>
       <label className="field">Scheduled cleaning date<input required type="date" min="2000-01-01" max="2100-12-31" value={date} onChange={e => setDate(e.target.value)} /></label>
       <label className="field">Clean type<select value={kind} onChange={e => setKind(e.target.value)}><option value="regular">Regular clean</option><option value="deep">Deep clean</option></select></label>
-      <p>Tasks are copied from the property’s clean list when you create the job.</p>
+      <p>Applicable tasks are copied from the property’s clean list. Its accepted Cleaner assignment is used automatically.</p>
       <button className="primary" disabled={busy || !m.property}>Create cleaning job</button>
     </form>
     <label className="field">Filter jobs by property<input type="search" value={filter} onChange={e => setFilter(e.target.value)} /></label>
@@ -47,12 +47,12 @@ function JobCard({ job, busy, mutate, reload }: { job: Job; busy: boolean; mutat
   return <section className="section">
     <h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean · {job.state !== "scheduled" ? stateLabels[job.state] : job.assigned ? "Cleaner assigned" : "Unassigned"}</p>
     {job.state === "scheduled" && <>
-      <form autoComplete="off" onSubmit={async e => { e.preventDefault(); if (await mutate({ action: "assign", id: job.id, revision: job.revision, code: code.trim() })) setCode(""); }}>
+      <details><summary>Assign this job with a private code</summary><form autoComplete="off" onSubmit={async e => { e.preventDefault(); if (await mutate({ action: "assign", id: job.id, revision: job.revision, code: code.trim() })) setCode(""); }}>
         <label className="field">Private Cleaner assignment code<input required spellCheck={false} autoCapitalize="none" maxLength={43} value={code} onChange={e => setCode(e.target.value)} /></label>
         <button className="back" disabled={busy}>{job.assigned ? "Replace assigned Cleaner" : "Assign Cleaner"}</button>
       </form>
       {job.assigned && <button className="back" disabled={busy} onClick={() => void mutate({ action: "unassign", id: job.id, revision: job.revision })}>Remove assignment</button>}
-      <button className="back" disabled={busy} onClick={() => { if (confirm("Cancel this job and remove Cleaner access?")) void mutate({ action: "cancel", id: job.id, revision: job.revision }); }}>Cancel job</button>
+      </details><button className="back" disabled={busy} onClick={() => { if (confirm("Cancel this job and remove Cleaner access?")) void mutate({ action: "cancel", id: job.id, revision: job.revision }); }}>Cancel job</button>
     </>}
     {["awaiting_review", "approved", "issue_reported"].includes(job.state) && <button className="back" onClick={() => setCompletion(true)}>View completion</button>}
     <Dialog id={"completion-" + job.id} title="Clean completion" open={completion} onClose={() => setCompletion(false)}>{completion && <Completion jobId={job.id} host onChanged={reload} />}<button className="back" onClick={() => setCompletion(false)}>Close</button></Dialog>

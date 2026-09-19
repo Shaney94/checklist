@@ -16,7 +16,7 @@ export const full = (d: string) =>
     dateStyle: "full",
     timeZone: "UTC",
   }).format(date(d));
-export function useCalendar() {
+export function useCalendar(assignmentId?: string) {
   const [month, setMonth] = useState(() => today().slice(0, 7) + "-01"),
     [selected, setSelected] = useState(""),
     [calendars, setCalendars] = useState<Calendar[]>([]),
@@ -42,12 +42,14 @@ export function useCalendar() {
     try {
       const q = new URLSearchParams({ month: month.slice(0, 7) });
       if (selected) q.set("id", selected);
+      if (assignmentId) { q.set("action", "calendar"); q.set("id", assignmentId); }
       const data = await request<{
         calendars: Calendar[];
         bookings: Booking[];
         state?: string;
         timeZone?: string;
-      }>("/api/calendar?" + q);
+        hasCalendar?: boolean; syncError?: boolean;
+      }>((assignmentId ? "/api/property-assignments?" : "/api/calendar?") + q);
       if (seq !== sequence.current) return;
       setCalendars(data.calendars || []);
       setZone(data.timeZone || "Europe/London");
@@ -77,6 +79,7 @@ export function useCalendar() {
             ? ""
             : "No stays this month.",
       );
+      if (assignmentId) { setNewIDs([]); setStatus(data.syncError ? "The Host’s calendar could not sync. Previously saved reservations are shown." : !data.hasCalendar ? "Your Host has not linked a calendar to this property yet." : data.bookings.length ? "" : "No stays this month."); return; }
       const ids = data.bookings.filter((b) => b.isNew).map((b) => b.id);
       setNewIDs([]);
       if (newTimer.current) clearTimeout(newTimer.current);
@@ -102,6 +105,7 @@ export function useCalendar() {
           );
       }
     } catch (e) {
+      if (assignmentId && seq === sequence.current) { setBookings([]); setCalendars([]); setConnected(false); }
       if (seq === sequence.current)
         setStatus(
           message(e) +
@@ -112,18 +116,23 @@ export function useCalendar() {
     } finally {
       if (seq === sequence.current) setBusy(false);
     }
-  }, [month, selected]);
+  }, [month, selected, assignmentId]);
   useEffect(() => {
     void load();
     const visible = () => {
+      if (assignmentId) { setBookings([]); setConnected(false); }
       if (!document.hidden) void load();
     };
     document.addEventListener("visibilitychange", visible);
+    if (assignmentId) window.addEventListener("focus", visible);
+    const timer = assignmentId ? setInterval(visible, 60000) : null;
     return () => {
+      if (timer) clearInterval(timer);
+      window.removeEventListener("focus", visible);
       sequence.current++;
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [load]);
+  }, [load, assignmentId]);
   useEffect(
     () => () => {
       if (newTimer.current) clearTimeout(newTimer.current);

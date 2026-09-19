@@ -35,6 +35,7 @@ test('Host creates and renames a property, configures tasks, then creates, assig
     }
     return route.fulfill({ json: { jobs: job ? [job] : [] } });
   });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app/host/properties');
   await page.getByLabel('New property name', { exact: true }).fill('Synthetic property');
   await page.getByRole('button', { name: 'Create property', exact: true }).click();
@@ -49,6 +50,7 @@ test('Host creates and renames a property, configures tasks, then creates, assig
   await page.getByLabel('Scheduled cleaning date').fill('2026-09-24');
   await page.getByRole('button', { name: 'Create cleaning job', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Renamed property', exact: true })).toBeVisible();
+  await page.getByText('Assign this job with a private code', { exact: true }).click();
   await page.getByLabel('Private Cleaner assignment code').fill(code);
   await page.getByRole('button', { name: 'Assign Cleaner', exact: true }).click();
   await expect(page.getByText(/Cleaner assigned/)).toBeVisible();
@@ -56,6 +58,7 @@ test('Host creates and renames a property, configures tasks, then creates, assig
   await expect(page.getByText(/Cleaner assigned/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('host-jobs.png'), fullPage: true });
+  await page.getByText('Assign this job with a private code', { exact: true }).click();
   await page.getByRole('button', { name: 'Remove assignment', exact: true }).click();
   await expect(page.getByText(/Unassigned/)).toBeVisible();
 });
@@ -81,6 +84,7 @@ test('Cleaner generates a code, checks assigned tasks and reads a guide; revoked
     expect(route.request().method()).toBe('GET'); expect(new URL(route.request().url()).searchParams.get('jobId')).toBe(jobId);
     return route.fulfill(revoked ? { status: 404, json: { error: 'Assigned Start Guide not found.' } } : { json: { revision: 1, guide: { access: 'Synthetic restricted instructions' } } });
   });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app#jobs');
   await page.getByText('Private assignment code', { exact: true }).click();
   await page.getByRole('button', { name: 'Generate assignment code', exact: true }).click();
@@ -129,6 +133,7 @@ test('unassigned Cleaner stays empty, retains renewed authentication and reduced
   await page.route('**/api/dashboard?*', route => route.fulfill({ json: { sidebarCollapsed: false } }));
   await page.route('**/api/cleaning-jobs', route => route.fulfill({ json: { jobs: [], hasCode: false } }));
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app#jobs');
   await expect(page.getByText(/No assigned jobs/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Resume reminders' })).toBeVisible();

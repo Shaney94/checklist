@@ -13,8 +13,8 @@ export async function requestAccount(body: Record<string, string>): Promise<Acco
     method: 'POST', credentials: 'same-origin', cache: 'no-store',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     signal: AbortSignal.timeout(20000),
-  });
-  const data = await response.json();
+  }).catch(() => { throw new AccountError('We couldn’t connect. Check your connection and try again.', 503); });
+  const data = await response.json().catch(() => { throw new AccountError('The account service could not respond. Please try again.', response.status); });
   if (!response.ok) throw new AccountError(data.error || 'We couldn’t complete that request. Please try again.', response.status, data.nextAction, data.retryAfter);
   return data;
 }

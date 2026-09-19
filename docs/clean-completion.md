@@ -12,7 +12,7 @@ This extends the existing `turnli_cleaning_jobs` rows, assignments and task snap
 
 Submission records the authenticated Cleaner and server timestamp. Review records the authenticated Host, server timestamp and issue text. Only one review transition from awaiting review is allowed. Revision checks reject stale requests. Job row locks serialize photo writes, checklist changes, submission, assignment and cancellation. Reassignment/unassignment/cancellation remove draft photos from a previous Cleaner without affecting submitted evidence. Existing job checklist progress survives reassignment.
 
-A Cleaner may read only their assigned job's completion. A Host may read submitted completion only in their own workspace. Each query rechecks the property's membership of the job's workspace. Property/calendar ownership is never evidence of a cleaning-job assignment. Guide access remains limited to scheduled assigned jobs; completion history does not confer ongoing property-access permissions.
+A Cleaner may read only their assigned job's completion. A Host may read submitted completion only in their own workspace. Each query rechecks the property's membership of the job's workspace. Property/calendar ownership is never evidence of a cleaning-job assignment. Job-based guide access remains limited to scheduled assigned jobs. An active [property assignment](property-assignments.md) independently permits the property guide; completion history alone does not confer ongoing property-access permissions. Revoking that relationship also blocks Cleaner completion/photo reads while preserving Host evidence.
 
 ## Private uploads
 

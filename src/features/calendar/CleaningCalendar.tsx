@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Dialog from "../../components/Dialog";
 import type { Booking, PrivateContent } from "../dashboard/types";
 import { whatsapp } from "../dashboard/api";
@@ -9,14 +9,17 @@ import CalendarManagement from "./CalendarManagement";
 export default function CleaningCalendar({
   model: m,
   content,
+  readOnly = false,
 }: {
   model: CalendarModel;
   content: PrivateContent | null;
+  readOnly?: boolean;
 }) {
   const [manage, setManage] = useState(false),
     [search, setSearch] = useState(""),
     [booking, setBooking] = useState<Booking | null>(null),
     [cant, setCant] = useState(false);
+  useEffect(() => { if (readOnly) { setBooking(null); setCant(false); } }, [m.bookings, readOnly]);
   const d = date(m.month),
     offset = (d.getUTCDay() + 6) % 7,
     start = +d - offset * 86400000,
@@ -42,7 +45,7 @@ export default function CleaningCalendar({
       >
         <div className="native-calendar-heading">
           <h2>Turnli Cleaning Calendar</h2>
-          <div className="calendar-heading-actions">
+          {!readOnly && <div className="calendar-heading-actions">
             <button
               className="back"
               id="manageCalendars"
@@ -60,7 +63,7 @@ export default function CleaningCalendar({
             >
               Refresh calendars
             </button>
-          </div>
+          </div>}
         </div>
         {m.calendars.length > 1 && (
           <div className="calendar-filter" id="calendarFilter">
@@ -266,7 +269,7 @@ export default function CleaningCalendar({
           </details>
         )}
       </section>
-      {manage && (
+      {manage && !readOnly && (
         <CalendarManagement
           calendars={m.calendars}
           open={manage}

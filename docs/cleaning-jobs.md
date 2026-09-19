@@ -1,5 +1,7 @@
 # Properties, cleaning jobs and assignments
 
+Property-level email invitations now provide the default assignment path; see [property assignments](property-assignments.md) for acceptance, inherited jobs, operational calendars and revocation. The private job-code path below remains supported.
+
 Properties remain in the existing workspace document (`turnli_dashboard`). Hosts create or rename them and edit their cleaning lists through the existing revision-checked API. Every property lookup and job creation is scoped to the authenticated Host's workspace. There is no second property model.
 
 `turnli_cleaning_jobs` belongs to that workspace and a property in its document. Jobs are manually scheduled cleaning work, never reservations. Creating a job snapshots the selected regular/deep task list; later template changes affect future jobs. Checklist progress belongs to the job and persists in PostgreSQL, including through reassignment. Jobs can be assigned, reassigned, unassigned or cancelled. Cancellation is terminal in this first version. Dates do not assert physical checkout or automatically authorize completion.

@@ -159,17 +159,19 @@ export default function WorkspaceTools({
             ) : (
               <>
                 <p role="status">
-                  {p.checked[kind].length} of {p[kind].length} completed
+                  {setupOnly ? "Select the tasks applicable to this property. Future jobs include only selected tasks." : `${p.checked[kind].length} of ${p[kind].length} completed`}
                 </p>
                 {p[kind].map((task, index) => (
                   <label key={index}>
                     <input
                       type="checkbox"
-                      disabled={m.busy || setupOnly}
-                      checked={p.checked[kind].includes(index)}
+                      disabled={m.busy}
+                      aria-label={setupOnly ? "Applicable: " + task : task}
+                      checked={setupOnly ? !p.notApplicable?.[kind]?.includes(index) : p.checked[kind].includes(index)}
                       onChange={(e) =>
                         void m.save({
-                          action: "check",
+                          action: setupOnly ? "applicability" : "check",
+                          applicable: e.target.checked,
                           id: p.id,
                           kind,
                           index,
@@ -177,7 +179,7 @@ export default function WorkspaceTools({
                         })
                       }
                     />
-                    <span>{task}</span>
+                    <span>{task}{setupOnly && p.notApplicable?.[kind]?.includes(index) ? " — Not applicable" : ""}</span>
                   </label>
                 ))}
               </>
@@ -187,6 +189,7 @@ export default function WorkspaceTools({
             )}
           </div>
           <div className="dialog-actions">
+            {kind !== "faqs" && <button className="back" disabled={m.busy} onClick={() => { if (confirm("Replace this property list with the standard template? Existing job checklists stay unchanged.")) void m.save({ action: "template", id: p.id, kind }); }}>Use standard template</button>}
             <button className="back" onClick={edit}>
               Edit
             </button>
