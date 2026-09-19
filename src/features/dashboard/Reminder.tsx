@@ -12,10 +12,13 @@ const reminders = [
 export default function Reminder({
   content,
   visible,
+  jobs = false,
 }: {
   content: PrivateContent | null;
   visible: boolean;
+  jobs?: boolean;
 }) {
+  const jobReminder = "Check your assigned jobs for your next clean. Reservation dates do not confirm checkout.";
   const [index, setIndex] = useState(0),
     [started, setStarted] = useState(false),
     [paused, setPaused] = useState(false),
@@ -87,8 +90,8 @@ export default function Reminder({
       ) : (
         <p id="workspaceReminder" className={fading ? "fading" : ""}>
           {started
-            ? reminders[index]
-            : "Always check the calendar for your next clean. Don’t rely on WhatsApp notifications."}
+            ? jobs && index === 2 ? jobReminder : reminders[index]
+            : jobs ? jobReminder : "Always check the calendar for your next clean. Don’t rely on WhatsApp notifications."}
         </p>
       )}
     </section>

@@ -40,6 +40,7 @@ export type Workspace = {
   };
 };
 export type Calendar = {
+  propertyId?: string | null;
   id: string;
   name: string;
   platform: string;

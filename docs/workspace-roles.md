@@ -24,34 +24,20 @@ the no-role Cleaner fallback stays unchanged.
 
 ## Routes and permissions
 
-- Cleaner: `/app`, retaining all existing calendar, setup and checklist tools.
-- Host: `/app/host`, with Properties, Reservations, Cleaning jobs, Cleaning
-  setup and Account & settings destinations. Cleaning setup includes the
-  property Start Guide editor; other domain destinations remain placeholders.
-  Account uses the existing shared controls.
-- `/app` sends explicitly assigned hosts to `/app/host`. Cleaner requests for
-  Host routes return 403; unsupported routes return 404. Authentication outages
-  remain 503 and anonymous requests use the existing login.
-- Both roles may read/manage their workspace's existing property setup and
-  calendars and save their own sidebar preference. Only Cleaner may update
-  checklist completion/reset or original-workspace progress. These existing
-  Cleaner setup permissions are intentionally preserved.
+- Cleaner: `/app`, with their own property calendars, assigned jobs, persistent job checklists, FAQs and read-only Start Guides. Private assignment codes identify authenticated Cleaners without granting authentication or property access.
+- Host: `/app/host`, with property/task setup, existing reservation calendars, cleaning job creation/assignment, the Start Guide editor and shared account controls.
+- `/app` sends explicit Hosts to `/app/host`. Cleaner requests for Host routes return 403; unsupported routes return 404. Authentication outages remain 503 and anonymous requests use the existing login.
+- Hosts administer properties and calendars in their authenticated Host workspace. Cleaners administer properties and calendars in their personal Cleaner workspace. Host-owned operational data and Start Guides still require active job assignments. Both roles retain account preferences.
 
 ## Data boundaries
 
-The authenticated server identity supplies `workspaceId`; callers cannot select
-another workspace. The existing membership model grants access to the properties
-within that workspace. Property mutations require an ID in that workspace's
-Neon document. Calendar reads/updates/deletes, feed URL exports, sync requests and
-seen-booking writes use workspace-scoped records. Original encrypted content
-requires both the original-workspace entitlement and Cleaner permission.
+The authenticated Host identity supplies `workspaceId`; callers cannot select another workspace. Property mutations require an ID in that workspace's Neon document. Calendar reads/updates/deletes, feed URL exports, sync requests and seen-booking writes remain workspace-scoped.
 
-There is no new property-assignment model or membership/role editor in this
-foundation. Per-cleaner assignments, multi-workspace switching and multiple
-simultaneous roles require separate design before introducing narrower grants.
-Role routing needs no database migration, and this code does not change
-provider assignments. The Start Guide schema migration is described below. Configure Host roles through the existing identity-provider admin
-controls when ready.
+Cleaner calendar/property administration uses `managedWorkspace(user)` from the central policy: `user:<authenticated ID>`. Host administration retains the existing authenticated `workspaceId`. Legacy tenant membership cannot expose another Host’s properties or feeds. Reads of Host-assigned work derive the property/workspace from the real job assignment, independently of the Cleaner’s own calendar records.
+
+Migration 006 adds nullable property IDs to calendars. New feeds require explicit selection of a property in the managed workspace. Existing feeds stay unlinked until explicitly linked; existing owners are not changed. A link never establishes a job assignment or grants access to a Start Guide. Shared legacy tenant feeds are not copied or assigned to individuals without reliable ownership evidence.
+
+See [Cleaning jobs](cleaning-jobs.md) for the assignment model, migration 005 and focused persistence/isolation checks. Role routing itself needs no migration and does not change provider role assignments. Invitations, multi-workspace switching and team management are not implemented.
 
 ## Property Start Guide
 
@@ -69,11 +55,4 @@ comparison to prevent lost updates. The API is private/no-store and returns
 plain text fields only. Existing checklist, bootstrap and calendar responses do
 not include guides. Guide content is never stored in browser storage.
 
-Cleaner guide access is deliberately **blocked**, including cleaners in the
-same workspace and the original workspace. The current data model has no
-cleaner/property assignments or authorized cleaning jobs. Workspace membership
-alone is insufficient for sensitive guide access. The Cleaner navigation shows
-this limitation without loading guide content. The read-only guide rendering
-foundation cannot bypass the API. Before enabling Cleaner reads, add real,
-server-verified property/job authorization, including revocation, and focused
-isolation tests. No assignments or cleaning jobs are fabricated here.
+Cleaner guide reads require `guide.assigned` and a real scheduled job assigned to the authenticated user. The server derives the property/workspace from the job and verifies the assignment and property ownership in the same SQL query that reads the guide. Cancellation, unassignment or reassignment revokes access. Cleaners cannot edit guides. Workspace membership, code possession and caller-supplied property IDs do not grant access.

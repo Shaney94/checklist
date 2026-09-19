@@ -7,9 +7,10 @@ import {
 export async function login(
   context: BrowserContext,
   request: APIRequestContext,
+  role?: "host",
 ) {
   const tokens = await (
-    await request.get("http://127.0.0.1:3101/tokens")
+    await request.get("http://127.0.0.1:3101/tokens" + (role ? "?role=" + role : ""))
   ).json();
   await context.setExtraHTTPHeaders({
     Cookie:
@@ -24,7 +25,7 @@ export async function fixtures(page: Page) {
   let sidebarCollapsed = false;
   let seen = false;
   const property = {
-    id: "property-1",
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     name: "Test property",
     phone: "+441234567890",
     notes: "Existing instructions",
@@ -36,6 +37,7 @@ export async function fixtures(page: Page) {
   let calendars = [
     {
       id: "calendar-1",
+      propertyId: null as string | null,
       name: "Test property",
       platform: "Airbnb",
       status: "Connected",
@@ -90,7 +92,7 @@ export async function fixtures(page: Page) {
           status: b.enabled ? "Connected" : "Paused",
         }) : c);
       if (b.action === "connect")
-        calendars.push({ ...calendars[0], id: "calendar-2", name: b.name });
+        calendars.push({ ...calendars[0], id: "calendar-2", name: b.name, propertyId: b.propertyId });
       if (b.action === "remove")
         calendars = calendars.filter((c) => c.id !== b.id);
       return r.fulfill({

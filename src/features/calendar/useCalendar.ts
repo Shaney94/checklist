@@ -59,7 +59,7 @@ export function useCalendar() {
       if (data.state === "not-connected") {
         setBookings([]);
         setStatus(
-          "Connect your booking calendar to see upcoming stays and automatically schedule cleans.",
+          "Connect your booking calendar to see upcoming stays and plan cleaning jobs separately.",
         );
         setLoaded(true);
         loadedRef.current = true;

@@ -4,8 +4,9 @@ import { request, message, APIError } from "../dashboard/api";
 import { guideFields, type Guide, type SavedGuide } from "./fields";
 import "./start-guide.css";
 
-export default function StartGuide({ propertyId, editable = false, onDirtyChange }: {
+export default function StartGuide({ propertyId, jobId, editable = false, onDirtyChange }: {
   propertyId: string;
+  jobId?: string;
   editable?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
@@ -25,13 +26,23 @@ export default function StartGuide({ propertyId, editable = false, onDirtyChange
     setStatus(propertyId ? "Loading Start Guide…" : "Choose a property to open its Start Guide.");
     if (propertyId) {
       setBusy(true);
-      request<SavedGuide>("/api/start-guide?id=" + encodeURIComponent(propertyId), undefined, controller.signal)
+      request<SavedGuide>("/api/start-guide?" + (jobId ? "jobId=" + encodeURIComponent(jobId) : "id=" + encodeURIComponent(propertyId)), undefined, controller.signal)
         .then((data) => { setSaved(data); setDraft(data.guide); setStatus(""); })
         .catch((error) => { if (!controller.signal.aborted) setStatus(message(error)); })
         .finally(() => { if (!controller.signal.aborted) setBusy(false); });
     }
     return () => controller.abort();
-  }, [propertyId, reload]);
+  }, [propertyId, jobId, reload]);
+  useEffect(() => {
+    if (!jobId) return;
+    const hide = () => { setSaved(null); setDraft({}); };
+    const refresh = () => { hide(); if (!document.hidden) setReload(v => v + 1); };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("pagehide", hide);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = setInterval(refresh, 60000);
+    return () => { clearInterval(timer); window.removeEventListener("focus", refresh); window.removeEventListener("pagehide", hide); document.removeEventListener("visibilitychange", refresh); };
+  }, [jobId]);
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -58,7 +69,7 @@ export default function StartGuide({ propertyId, editable = false, onDirtyChange
       <p role="status">{status}</p>
       {saved && (editable ? (
         <form onSubmit={save} autoComplete="off">
-          <p>Keep property access details here, separate from cleaning checklists. Cleaner access is not available yet.</p>
+          <p>Keep property access details here, separate from cleaning checklists. Only Cleaners assigned to active jobs can read this guide.</p>
           {Object.entries(guideFields).map(([key, label]) => (
             <div className="field" key={key}>
               <label htmlFor={fieldId + key}>{label}</label>

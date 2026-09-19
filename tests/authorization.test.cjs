@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {resolveRole,can,home,workspaceRoute}=require('../lib/authorization.cjs');
+const {resolveRole,can,home,workspaceRoute,managedWorkspace}=require('../lib/authorization.cjs');
 const {accountUser}=require('../lib/account.cjs');
 const {createHandler:dashboard}=require('../src/server/handlers/dashboard.js');
 const {createHandler:calendar}=require('../src/server/handlers/calendar.js');
@@ -31,9 +31,12 @@ test('routing separates host and cleaner experiences and rejects invented pages'
  assert.equal(workspaceRoute(user('host'),'/app/host/payments').status,404);
  assert.equal(workspaceRoute(user(null),'/app').status,403);
 });
-test('permission policy preserves cleaner setup while reserving checklist work for cleaners',()=>{
- for(const role of ['host','cleaner'])for(const permission of ['workspace.read','workspace.setup','calendar.read','calendar.manage','preferences'])assert(can(user(role),permission));
- assert(can(user(),'cleaning.work'));assert(!can(user('host'),'cleaning.work'));assert(!can(user(),'host.view'));
+test('both roles manage calendars/properties, but Cleaner management uses only their own workspace',()=>{
+ for(const permission of ['workspace.read','workspace.setup','calendar.read','calendar.manage'])for(const role of ['host','cleaner'])assert(can(user(role),permission));
+ assert(!can(user(),'jobs.manage'));assert(can(user(),'jobs.assigned'));assert(can(user(),'guide.assigned'));assert(!can(user(),'guide.read'));
+ assert.equal(managedWorkspace({...user(),workspaceId:'org:host'}),'user:one');
+ assert.equal(managedWorkspace({...user('host'),workspaceId:'org:host'}),'org:host');
+ assert.equal(managedWorkspace({...user(),id:null}),null);
 });
 test('unknown roles are rejected before any workspace, calendar or private-content access',async()=>{
  for(const handler of [dashboard,calendar,bootstrap]){

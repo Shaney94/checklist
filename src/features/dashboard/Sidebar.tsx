@@ -3,16 +3,12 @@ import {
   useEffect,
   useState,
   useRef,
-  type ReactNode,
   type PointerEvent,
   type FocusEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import type { Kind } from "./types";
-import type { WorkspaceModel } from "./useWorkspace";
-import type { CalendarModel } from "../calendar/useCalendar";
 import { labels } from "./WorkspaceTools";
-import Dialog from "../../components/Dialog";
 import { request } from "./api";
 const paths = {
   calendar: "M4 5h16v16H4z M8 2v6 M16 2v6 M4 10h16",
@@ -38,27 +34,14 @@ export function Icon({ name }: { name: keyof typeof paths }) {
     </svg>
   );
 }
-export default function Sidebar({
-  model: m,
-  calendar,
-  hasOriginal,
-  active,
-  navigate,
-  setup,
-  mobile,
-  toolsTarget,
-}: {
-  model: WorkspaceModel;
-  calendar: CalendarModel;
-  hasOriginal: boolean;
-  active: Kind | "calendar";
-  navigate: (v: Kind | "calendar") => void;
-  setup: (edit: boolean) => void;
+export default function Sidebar({ active, navigate, mobile, toolsTarget, onGuide }: {
+  active: Kind | "jobs" | "calendar";
+  navigate: (v: Kind | "jobs" | "calendar") => void;
   mobile: boolean;
   toolsTarget: HTMLElement | null;
+  onGuide: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false),
-    [guideOpen, setGuideOpen] = useState(false),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(""),
     [tip, setTip] = useState<{
@@ -176,70 +159,20 @@ export default function Sidebar({
           {k === "faqs" && <p className="nav-group-label">Support</p>}
           {button(
             k,
-            (m.property?.[k].length || hasOriginal ? "" : "＋ ") + labels[k],
+            labels[k],
             () => navigate(k),
-            { disabled: !m.ready || m.busy, active: active === k },
+            { active: active === k },
           )}
         </span>
       ))}
     </nav>
   );
-  const secondary: ReactNode = (
+  const secondary = (
     <div className="sidebar-secondary">
+      {button("regular", "Cleaning jobs", () => navigate("jobs"), { active: active === "jobs" })}
       <p className="nav-group-label">Property guidance</p>
-      {button("faqs", "Start Guide", () => setGuideOpen(true))}
-      <p className="nav-group-label">Calendar tools</p>
-      {button("add", "Download Calendar", () => void calendar.download())}
-      {button(
-        "copy",
-        calendar.copied ? "Copied!" : "Copy iCal Link",
-        () => void calendar.copy(),
-      )}
-      <p className="nav-group-label">Property setup</p>
-      <div className="section workspace-property">
-        <label className="field" htmlFor="workspaceProperty">
-          Property
-          <select
-            id="workspaceProperty"
-            value={m.selected}
-            onChange={(e) => m.setSelected(e.target.value)}
-          >
-            <option value="">Choose a property</option>
-            {m.state.data.properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="dialog-actions">
-          <button
-            className="back"
-            disabled={!m.ready || m.busy}
-            onClick={() => setup(false)}
-          >
-            Add property
-          </button>
-          <button
-            className="back"
-            disabled={!m.property || m.busy}
-            onClick={() => setup(true)}
-          >
-            Property setup
-          </button>
-        </div>
-      </div>
-      <p id="workspaceStatus" role="status" aria-live="polite">
-        {m.status}
-      </p>
-      {m.conflict && (
-        <button className="back" onClick={() => void m.load()}>
-          Reload workspace
-        </button>
-      )}
-      <p className="sidebar-pref-status" role="status">
-        {status}
-      </p>
+      {button("faqs", "Start Guide", onGuide)}
+      <p className="sidebar-pref-status" role="status">{status}</p>
     </div>
   );
   return (
@@ -263,13 +196,6 @@ export default function Sidebar({
       </aside>
       {mobile && createPortal(navigation, document.body)}
       {mobile && toolsTarget && createPortal(secondary, toolsTarget)}
-      <Dialog id="startGuideDialog" title="Property Start Guide" open={guideOpen} onClose={() => setGuideOpen(false)}>
-        {guideOpen && <>
-          <p>{m.property?.name || "No property selected"}</p>
-          <p>Cleaner access requires verified authorization for this property or cleaning job. It is not available yet.</p>
-          <button className="back" onClick={() => setGuideOpen(false)}>Close</button>
-        </>}
-      </Dialog>
       {tip &&
         createPortal(
           <div

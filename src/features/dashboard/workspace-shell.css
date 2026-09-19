@@ -6,3 +6,4 @@
 .info-banner #workspaceReminder{transition:opacity .16s ease}.info-banner #workspaceReminder.fading{opacity:0}@media(prefers-reduced-motion:reduce){.info-banner #workspaceReminder{transition:none}}
 .info-banner .reminder{transition:opacity .16s ease}.info-banner .reminder.fading{opacity:0}
 @media(prefers-reduced-motion:reduce){.info-banner .reminder{transition:none}}
+.job-workspace{padding:20px;margin-top:0;min-width:0}.job-workspace .field input,.job-workspace .field select{max-width:100%;min-width:0}.job-workspace form{margin-bottom:18px}.job-workspace details{margin-top:16px}.job-workspace .section{padding:16px}.job-workspace input[readonly]{font-family:monospace}.host-workspace .dialog-actions svg{width:18px;height:18px;vertical-align:middle}@media(max-width:700px){.job-workspace{padding:14px}}

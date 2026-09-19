@@ -95,10 +95,12 @@ export function PropertySetup({
 export default function WorkspaceTools({
   model: m,
   kind,
+  setupOnly = false,
   onClose,
 }: {
   model: WorkspaceModel;
   kind: Kind;
+  setupOnly?: boolean;
   onClose: () => void;
 }) {
   const p = m.property!;
@@ -163,7 +165,7 @@ export default function WorkspaceTools({
                   <label key={index}>
                     <input
                       type="checkbox"
-                      disabled={m.busy}
+                      disabled={m.busy || setupOnly}
                       checked={p.checked[kind].includes(index)}
                       onChange={(e) =>
                         void m.save({
@@ -188,7 +190,7 @@ export default function WorkspaceTools({
             <button className="back" onClick={edit}>
               Edit
             </button>
-            {kind !== "faqs" && (
+            {kind !== "faqs" && !setupOnly && (
               <>
                 <button
                   className="back"

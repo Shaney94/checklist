@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { useWorkspace } from "../dashboard/useWorkspace";
 import Dialog from "../../components/Dialog";
 import type { Calendar } from "../dashboard/types";
 import { request, message } from "../dashboard/api";
@@ -23,6 +24,8 @@ export default function CalendarManagement({
   reload: (removed?: string) => Promise<void>;
   refresh: (id?: string) => Promise<string>;
 }) {
+  const workspace = useWorkspace();
+  const [propertyId, setPropertyId] = useState(""), [propertyName, setPropertyName] = useState("");
   const [editing, setEditing] = useState<Calendar | null | undefined>(
       calendars.length ? undefined : null,
     ),
@@ -36,6 +39,7 @@ export default function CalendarManagement({
     [enabled, setEnabled] = useState(true);
   function edit(c: Calendar | null) {
     setEditing(c);
+    setPropertyId(c?.propertyId || "");
     setName(c?.name || "");
     setURL("");
     setPlatform(c?.platform || "Custom iCal");
@@ -65,6 +69,7 @@ export default function CalendarManagement({
           action: editing ? "update" : "connect",
           id: editing?.id,
           name,
+          propertyId: propertyId || null,
           platform,
           checkIn,
           checkOut,
@@ -89,6 +94,17 @@ export default function CalendarManagement({
         Feeds sync daily in the background. You can also refresh them here; each
         feed has a five-minute refresh cooldown.
       </p>
+      <p role="status">{workspace.status}</p>
+      {workspace.conflict && <button className="back" onClick={() => void workspace.load()}>Reload properties</button>}
+      <details><summary>Add a property to this workspace</summary>
+        <form onSubmit={async e => {
+          e.preventDefault();
+          if (await workspace.save({ action: "property", name: propertyName, phone: "", notes: "" })) setPropertyName("");
+        }}>
+          <label className="field">New property name<input required maxLength={100} value={propertyName} onChange={e => setPropertyName(e.target.value)} /></label>
+          <button className="back" disabled={workspace.busy || !workspace.ready}>Create property</button>
+        </form>
+      </details>
       <div id="connectedCalendars">
         {!calendars.length ? (
           <p>No calendars connected yet.</p>
@@ -101,6 +117,7 @@ export default function CalendarManagement({
                 {c.status === "Connected" ? " ✓" : ""}
               </p>
               <p className="calendar-help">
+                {c.propertyId ? "Linked to a workspace property. " : "No property linked. "}
                 Last synced: {syncDate(c.lastSuccess)}
               </p>
               {c.error && <p className="calendar-error">{c.error}</p>}
@@ -167,6 +184,13 @@ export default function CalendarManagement({
               {syncDate(editing.lastAttempt)}.
             </p>
           )}
+          <label className="field">Workspace property
+            <select required={!editing || !!editing.propertyId} value={propertyId} onChange={e => setPropertyId(e.target.value)} disabled={!workspace.ready || workspace.busy}>
+              <option value="">{editing && !editing.propertyId ? "Not linked (existing feed)" : "Choose a property"}</option>
+              {workspace.state.data.properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          <p className="calendar-help">Choose the property this feed belongs to. A calendar link does not grant access to another workspace or its Start Guide.</p>
           <label className="field">
             Calendar/property name
             <input
@@ -246,7 +270,7 @@ export default function CalendarManagement({
             </label>
           )}
           <div className="dialog-actions">
-            <button className="primary" disabled={busy}>
+            <button className="primary" disabled={busy || workspace.busy || (!editing && (!workspace.ready || !propertyId))}>
               {editing ? "Save changes" : "Connect calendar"}
             </button>
             <button

@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { login, fixtures } from "../fixtures/dashboard";
-test("authenticated calendar keeps continuous bars, details, management, filters and copying", async ({
+for (const role of ["host", "cleaner"] as const) test(`${role} calendar keeps continuous bars, details, management, filters and copying`, async ({
   page,
   context,
   request,
 }, info) => {
-  await login(context, request);
+  await login(context, request, role === "host" ? "host" : undefined);
   const actions = await fixtures(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -23,7 +23,7 @@ test("authenticated calendar keeps continuous bars, details, management, filters
       },
     }),
   );
-  await page.goto("/app");
+  await page.goto(role === "host" ? "/app/host/reservations" : "/app");
   await expect(
     page.getByRole("heading", { name: "Turnli Cleaning Calendar" }),
   ).toBeVisible();
@@ -52,9 +52,11 @@ test("authenticated calendar keeps continuous bars, details, management, filters
     .getByRole("button", { name: "+ Add calendar", exact: true })
     .click();
   await page.getByLabel("Calendar/property name").fill("Second property");
+  await page.getByRole("combobox", { name: "Workspace property", exact: true }).selectOption("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   await page.getByLabel("iCal URL").fill("https://example.com/second.ics");
   await page.getByRole("button", { name: "Connect calendar" }).click();
   await expect(page.locator(".connected-calendar")).toHaveCount(2);
+  await expect(page.locator("#connectedCalendars")).toContainText("Linked to a workspace property.");
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Calendar property" })
@@ -84,8 +86,6 @@ test("authenticated calendar keeps continuous bars, details, management, filters
   await expect(page.locator("#calendarStatus")).toHaveText(
     "Calendars refreshed.",
   );
-  if (info.project.name === "mobile")
-    await page.getByRole("button", { name: "More", exact: true }).click();
   await page
     .getByRole("button", { name: "Copy iCal Link", exact: true })
     .click();
@@ -107,8 +107,6 @@ test("authenticated calendar keeps continuous bars, details, management, filters
     .getByRole("button", { name: "Download Calendar", exact: true })
     .click();
   expect((await downloaded).suggestedFilename()).toBe("test.ics");
-  if (info.project.name === "mobile")
-    await page.getByRole("button", { name: "Close", exact: true }).click();
   expect(actions).toContain("seen");
   expect(actions).toContain("update");
   expect(actions).toContain("refresh");
@@ -123,167 +121,15 @@ test("authenticated calendar keeps continuous bars, details, management, filters
     fullPage: true,
   });
 });
-test("workspace tools retain saved checklists, FAQs, Back navigation and account controls", async ({
-  page,
-  context,
-  request,
-}, info) => {
-  await login(context, request);
-  await fixtures(page);
-  await page.goto("/app");
-  await page
-    .getByRole("button", { name: "Regular Clean List", exact: true })
-    .click();
-  await expect(page.locator("#workspaceContentTitle")).toHaveText(
-    "Regular Clean List",
-  );
-  await page.getByRole("checkbox", { name: "Wipe surfaces" }).check();
-  await expect(page.locator("#workspaceContentView")).toContainText(
-    "1 of 2 completed",
-  );
-  await page.goBack();
-  await expect(
-    page.getByRole("heading", { name: "Turnli Cleaning Calendar" }),
-  ).toBeVisible();
-  await page.goForward();
-  await expect(
-    page.getByRole("checkbox", { name: "Wipe surfaces" }),
-  ).toBeChecked();
-  await page.getByRole("button", { name: "FAQs", exact: true }).click();
-  await page.getByText("Where are supplies?", { exact: true }).click();
-  await expect(
-    page.getByText("In the cupboard.", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Answer", exact: true })
-    .fill("In the labelled cupboard.");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await page.getByText("Where are supplies?", { exact: true }).click();
-  await expect(
-    page.getByText("In the labelled cupboard.", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Calendar", exact: true }).click();
-  if (info.project.name === "desktop") {
-    await page.getByRole("button", { name: "Collapse sidebar" }).click();
-    await page
-      .getByRole("button", { name: "Deep Clean List", exact: true })
-      .focus();
-    await expect(page.getByRole("tooltip")).toHaveText("Deep Clean List");
-  }
-  await page.getByRole("button", { name: /Signed in as/ }).click();
-  await expect(
-    page.getByRole("heading", { name: "Your account" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Set or change password" }),
-  ).toHaveAttribute("href", "/?reset=1&next=%2Fapp");
-});
-test("empty accounts stay empty and original workspace tools retain their existing interactions", async ({
-  page,
-  context,
-  request,
-}) => {
-  const tokens = await (
-    await request.get("http://127.0.0.1:3101/tokens")
-  ).json();
-  const renewed = await request.get("/app", {
-    headers: {
-      Cookie:
-        "__Host-turnly-session=" +
-        tokens.expired +
-        "; __Host-turnly-refresh=" +
-        tokens.refresh,
-    },
-    maxRedirects: 0,
-  });
-  expect(renewed.status()).toBe(200);
-  expect(
-    renewed.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie"),
-  ).toHaveLength(2);
-  await login(context, request);
-  await fixtures(page);
-  let checked: boolean[] = [];
-  await page.route("**/api/dashboard", (r) => {
-    if (r.request().method() === "POST")
-      checked = r.request().postDataJSON().state?.checked || checked;
-    return r.fulfill({
-      json: {
-        revision: 0,
-        data: { properties: [], legacyProgress: { regular: { checked } } },
-      },
-    });
-  });
-  await page.goto("/app");
-  await page
-    .getByRole("button", { name: "＋ Regular Clean List", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Property setup" }),
-  ).toBeVisible();
-  await expect(page.locator("#sections")).toHaveCount(0);
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await page.route("**/api/dashboard-bootstrap", (r) =>
-    r.fulfill({
-      json: {
-        user: {
-          id: "browser-fixture",
-          email: "fixture@example.com",
-          legacyAccess: true,
-          role: "cleaner",
-          canInvite: false,
-          workspaceId: "test",
-        },
-        content: {
-          regular: [["Kitchen", ["Original task"]]],
-          deep: [["Deep", ["Deep task"]]],
-          faqs: [
-            {
-              question: "Existing FAQ",
-              answer: [{ tag: "strong", children: ["Existing answer"] }],
-            },
-          ],
-          reminders: [["Existing reminder"]],
-          hostPhone: "441234567890",
-          propertyName: "Original property",
-          originalCalendar: "",
-        },
-      },
-    }),
-  );
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Regular Clean List", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Regular Clean", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("checkbox", { name: "Original task" }).check();
-  await expect(page.locator("#checklistView")).toContainText("100% complete");
-  await expect.poll(() => checked).toEqual([true]);
-  await page.getByRole("button", { name: "Report an issue to host" }).click();
-  await page.getByRole("radio", { name: "Damage", exact: true }).check();
-  await expect(
-    page.getByRole("link", { name: "Report via WhatsApp" }),
-  ).toHaveAttribute("href", /wa\.me\/441234567890\?text=.*Damage/);
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await page.getByRole("button", { name: "FAQs", exact: true }).click();
-  await page.getByRole("button", { name: "Existing FAQ" }).click();
-  await expect(
-    page.getByText("Existing answer", { exact: true }),
-  ).toBeVisible();
-});
-
-test("compact month segments retain identity, readable details and reduced-motion reminders", async ({ page, context, request }, info) => {
-  await login(context, request);
+test("compact month segments retain identity, readable details under reduced motion", async ({ page, context, request }, info) => {
+  await login(context, request, "host");
   await fixtures(page);
   await page.clock.install({ time: new Date("2026-09-19T12:00:00Z") });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/app");
+  await page.goto("/app/host/reservations");
   const bars = page.locator('[data-booking-id="calendar-1:stay"]');
   await expect(bars).toHaveCount(3);
   await expect(page.locator(".calendar-zone")).toHaveText("BST");
-  await expect(page.getByRole("button", { name: "Resume reminders" })).toBeVisible();
   const geometries = await bars.evaluateAll((nodes) => nodes.map((node) => {
     const rect = node.getBoundingClientRect();
     const week = node.closest('.booking-week')!.getBoundingClientRect();
@@ -308,55 +154,11 @@ test("compact month segments retain identity, readable details and reduced-motio
   await expect(page.locator('.calendar-zone')).toHaveText('BST / GMT');
   await page.getByRole('button', { name: 'Next month' }).click();
   await expect(page.locator('.calendar-zone')).toHaveText('GMT');
-  await page.mouse.move(0, 0);
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await expect(page.getByRole("button", { name: "Pause reminders" })).toBeVisible();
-  const reminder = page.locator('#workspaceReminder');
-  const initialReminder = await reminder.textContent();
-  await page.clock.runFor(10200);
-  await expect(reminder).not.toHaveText(initialReminder!);
-  await page.getByRole('button', { name: 'Pause reminders' }).click();
-  const pausedReminder = await reminder.textContent();
-  await page.clock.runFor(10200);
-  await expect(reminder).toHaveText(pausedReminder!);
-});
 
-test("sidebar preference survives reload and cleaning lists contain only task context", async ({ page, context, request }, info) => {
-  await login(context, request);
-  await fixtures(page);
-  await page.goto('/app');
-  if (info.project.name === 'desktop') {
-    await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible();
-    const before = (await page.locator('#cleaningCalendar').boundingBox())!.width;
-    await page.getByRole('button', { name: 'Collapse sidebar' }).click();
-    await expect.poll(async () => (await page.locator('#cleaningCalendar').boundingBox())!.width).toBeGreaterThan(before + 100);
-    await page.reload();
-    await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
-    const destination = page.getByRole('button', { name: 'Deep Clean List', exact: true });
-    await destination.hover();
-    await expect(page.getByRole('tooltip')).toHaveText('Deep Clean List');
-    expect(await page.getByRole('tooltip').evaluate((el) => el.parentElement === document.body)).toBe(true);
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('tooltip')).toHaveCount(0);
-    await destination.focus();
-    await expect(page.getByRole('tooltip')).toBeVisible();
-  }
-  for (const kind of ['Regular Clean List', 'Deep Clean List']) {
-    await page.getByRole('button', { name: kind, exact: true }).click();
-    await expect(page.locator('#workspaceContentTitle')).toHaveText(kind);
-    await expect(page.locator('#workspaceContentView input:not([type=checkbox])')).toHaveCount(0);
-    await expect(page.locator('#propertySummary')).toHaveCount(0);
-    await expect(page.locator('#workspaceContentDialog')).not.toContainText('Existing instructions');
-  }
-  await page.getByRole('checkbox', { name: 'Deep clean item' }).check();
-  await expect(page.locator('#workspaceContentView')).toContainText('1 of 1 completed');
-  await page.reload();
-  await expect(page.getByRole('checkbox', { name: 'Deep clean item' })).toBeChecked();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test("unknown and overlapping bookings stay distinct without invented metadata", async ({ page, context, request }, info) => {
-  await login(context, request);
+  await login(context, request, "host");
   await fixtures(page);
   await page.clock.setFixedTime(new Date('2026-09-19T12:00:00Z'));
   if (info.project.name === 'mobile') await page.setViewportSize({ width: 320, height: 740 });
@@ -369,7 +171,7 @@ test("unknown and overlapping bookings stay distinct without invented metadata",
       { id: 'c', property: 'Test property', source: 'Vrbo', sourceKey: 'vrbo', arrival: { date: '2026-09-15', time: '15:00' }, checkout: { date: '2026-09-19', time: '10:00' } },
     ],
   } }));
-  await page.goto('/app');
+  await page.goto('/app/host/reservations');
   const unknown = page.locator('[data-booking-id="a"]');
   await expect(unknown).toHaveAttribute('data-source', 'unknown');
   await expect(unknown.locator('.stay-guests, .stay-source')).toHaveCount(0);

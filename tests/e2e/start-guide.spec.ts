@@ -63,12 +63,13 @@ test('Cleaner guide entry exposes no content and real API denies forged property
   expect((await request.get('/api/start-guide?id=property-1')).status()).toBe(401);
   await login(context, request);
   await fixtures(page);
+  await page.route('**/api/cleaning-jobs', route => route.fulfill({ json: { jobs: [], hasCode: false } }));
   let guideRequests = 0;
   page.on('request', (r) => { if (r.url().includes('/api/start-guide')) guideRequests++; });
-  await page.goto('/app');
+  await page.goto('/app#jobs');
   if (info.project.name === 'mobile') await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Start Guide', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Property Start Guide' })).toContainText('It is not available yet.');
+  await expect(page.getByRole('dialog', { name: 'Property Start Guide' })).toContainText('Choose a verified assigned job');
   expect(guideRequests).toBe(0);
   const tokens = await (await request.get('http://127.0.0.1:3101/tokens')).json();
   const headers = { Cookie: '__Host-turnly-session=' + tokens.session + '; __Host-turnly-refresh=' + tokens.refresh, Origin: 'https://turnli.vercel.app' };
