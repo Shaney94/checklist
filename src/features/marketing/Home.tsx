@@ -1,5 +1,5 @@
-import Brand from './Brand';
-import { MobileNavigation, Motion, WorkspaceLink } from './Interactions';
+import { PublicHeader, PublicFooter } from './PublicChrome';
+import { Motion } from './Interactions';
 
 const steps = [
   ['Link your calendar', 'Bring reservation dates into your property workspace.'],
@@ -13,11 +13,7 @@ function Arrow() { return <span aria-hidden="true">↗</span>; }
 function Check() { return <span className="demo-check" aria-hidden="true">✓</span>; }
 export default function Home() {
   return <div className="public-site">
-    <Motion /><a className="public-skip" href="#main">Skip to content</a>
-    <header className="public-header"><div className="public-container header-inner">
-      <Brand /><nav className="desktop-navigation" aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#operations">The details</a><a href="#for-you">Who it’s for</a></nav>
-      <div className="header-actions"><WorkspaceLink /><a className="public-button" href="/register">Get started <Arrow /></a></div><MobileNavigation />
-    </div></header>
+    <Motion /><PublicHeader />
     <main id="main" tabIndex={-1}>
       <section className="public-container marketing-hero" aria-labelledby="hero-title">
         <div className="hero-copy"><p className="eyebrow">Cleaning without the managing.</p><h1 id="hero-title">Happier stays.<br /><em>Less to do.</em></h1>
@@ -57,13 +53,13 @@ export default function Home() {
       </div></section>
       <section id="for-you" className="public-container public-section use-cases" aria-labelledby="uses-title"><div className="section-intro" data-reveal><div><p className="eyebrow">Flexible for how you work</p><h2 id="uses-title">Your setup.<br />A little more sorted.</h2></div><p>One property or several.<br />Your own Cleaner or your own customers.</p></div><div className="use-case-grid" data-reveal>
         {[
-          ['01', 'Short-term rental Hosts', 'Keep your turnovers together.', 'Link a calendar, invite your Cleaner and review completed work in your property workspace.'],
-          ['02', 'Property managers', 'A clearer view across properties.', 'Keep calendars, instructions, assigned Cleaners and cleaning jobs organised by property.'],
-          ['03', 'Independent Cleaners', 'Your customers. Your workspace.', 'Manage your own customer properties and calendars, alongside work assigned by Turnli Hosts.'],
-        ].map(([number, title, heading, copy]) => <article key={number} className="use-case-card"><div className="use-case-art" aria-hidden="true"><span>{number}</span><div className={`property-shape shape-${number}`}><i /><i /><i /><i /></div></div><div className="use-case-copy"><p className="eyebrow">{title}</p><h3>{heading}</h3><p>{copy}</p></div></article>)}
+          ['01', 'Short-term rental Hosts', 'Keep your turnovers together.', 'Link a calendar, invite your Cleaner and review completed work in your property workspace.', '/airbnb-cleaning', 'Explore Airbnb cleaning'],
+          ['02', 'Property managers', 'A clearer view across properties.', 'Keep calendars, instructions, assigned Cleaners and cleaning jobs organised by property.', '/software/airbnb-cleaning', 'Explore cleaning software'],
+          ['03', 'Independent Cleaners', 'Your customers. Your workspace.', 'Manage your own customer properties and calendars, alongside work assigned by Turnli Hosts.', '/cleaners/airbnb-cleaning-jobs', 'Explore Cleaner opportunities'],
+        ].map(([number, title, heading, copy, href, link]) => <article key={number} className="use-case-card"><div className="use-case-art" aria-hidden="true"><span>{number}</span><div className={`property-shape shape-${number}`}><i /><i /><i /><i /></div></div><div className="use-case-copy"><p className="eyebrow">{title}</p><h3>{heading}</h3><p>{copy}</p><a className="public-text-link" href={href}>{link} <Arrow /></a></div></article>)}
       </div></section>
       <section className="final-cta" aria-labelledby="final-title"><div className="public-container" data-reveal><p className="eyebrow">A clearer day starts here</p><h2 id="final-title">Less managing.<br />More getting on with life.</h2><p>Bring your cleaning operations together with Turnli.</p><div className="public-actions"><a className="public-button" href="/register">Get started <Arrow /></a><a className="public-button button-outline" href="/login">Log in</a></div></div></section>
     </main>
-    <footer className="public-container public-footer"><div><Brand /><p>Cleaning without the managing.</p></div><nav aria-label="Footer navigation"><a href="#how-it-works">How it works</a><a href="#operations">The details</a><a href="#for-you">Who it’s for</a><a href="/login">Log in</a><a href="/register">Get started</a></nav><small>© {new Date().getFullYear()} Turnli</small></footer>
+    <PublicFooter />
   </div>;
 }

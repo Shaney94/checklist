@@ -55,7 +55,7 @@ Subscription URLs are returned only to authenticated owners/workspace members, a
 
 ## PWA and privacy
 
-The manifest and icons use Turnli branding. The service worker does not cache operational content. Checklist progress remains persisted in the authenticated workspace. `robots.txt` and noindex settings are preserved; noindex is not a substitute for authentication.
+The manifest and icons use Turnli branding. The service worker does not cache operational content. Checklist progress remains persisted in the authenticated workspace. Public marketing pages are indexable; authentication and private workspaces retain noindex and server-side authorization. See [public SEO and Search Console setup](docs/seo.md).
 
 ## Registration and workspace isolation
 

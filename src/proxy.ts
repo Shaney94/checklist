@@ -37,8 +37,12 @@ export async function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", policy);
   const response = NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", policy);
+  if (request.nextUrl.pathname === "/" && ['join', 't', 'reset', 'next'].some(key => request.nextUrl.searchParams.has(key))) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  }
   for (const cookie of auth?.headers.getSetCookie() || [])
     response.headers.append("Set-Cookie", cookie);
   return response;
 }
-export const config = { matcher: ["/", "/login", "/register", "/app/:path*"] };
+export const config = { matcher: ["/", "/login", "/register", "/app/:path*", "/airbnb-cleaning", "/software/airbnb-cleaning", "/cleaners/airbnb-cleaning-jobs"] };
