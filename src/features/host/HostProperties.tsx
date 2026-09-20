@@ -21,7 +21,7 @@ export default function HostProperties({ host = true }: { host?: boolean }) {
       <form key={m.property.id + m.property.name} onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); void m.save({ action: "property", id: m.property!.id, name: data.get("name"), phone: m.property!.phone, notes: m.property!.notes }); }}>
         <label className="field">Property name<input required name="name" maxLength={100} defaultValue={m.property.name} /></label><button className="back" disabled={m.busy}>Save property name</button>
       </form>
-      <p>The restored standard lists contain 38 Regular and 109 Deep tasks. Choose a list and Use standard template to adopt them; existing job progress and snapshots stay unchanged. Mark irrelevant tasks not applicable for future jobs.</p>
+      <p>Review the cleaning tasks for this property and mark any that do not apply. Changes apply to new jobs; existing job checklists stay unchanged.</p>
       <div className="dialog-actions">{(["regular", "deep", "faqs"] as Kind[]).map(k => <button className="back" key={k} onClick={() => setKind(k)}>{k === "faqs" ? "FAQs" : k === "regular" ? "Regular Clean List" : "Deep Clean List"}</button>)}</div>
       {kind && <WorkspaceTools key={m.property.id + kind} model={m} kind={kind} onClose={() => setKind(null)} setupOnly={host} />}
     </>}

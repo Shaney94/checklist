@@ -131,11 +131,31 @@ test('Host adopts restored templates, including an empty list, and sees persiste
   await expect(page.getByText('Custom / earlier Regular template · 1 tasks · 1 not applicable', { exact: true })).toBeVisible();
   page.once('dialog', d => d.accept());await page.getByRole('button', { name: 'Use standard template', exact: true }).click();
   await expect(page.getByText('Standard Regular template · 38 tasks · 1 not applicable', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Use standard template', exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Choose a list and Use standard template to adopt/)).toHaveCount(0);
   await expect(page.getByRole('checkbox', { name: 'Applicable: ' + templates.regular[7], exact: true })).not.toBeChecked();
   await page.reload();await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
   await expect(page.getByText('Standard Regular template · 38 tasks · 1 not applicable', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Use standard template', exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Choose a list and Use standard template to adopt/)).toHaveCount(0);
   await page.getByRole('button', { name: 'Deep Clean List', exact: true }).click();
   page.once('dialog', d => d.accept());await page.getByRole('button', { name: 'Use standard template', exact: true }).click();
   await expect(page.getByText('Standard Deep template · 109 tasks · 0 not applicable', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('Host creates a property with standard lists automatically and no adoption prompt', async ({ page, context, request }) => {
+  await login(context, request, 'host');
+  const { change } = require('../../src/server/handlers/dashboard.js');
+  let data = { properties: [] }, revision = 0;
+  await page.route('**/api/dashboard', r => { if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('property'); expect(b.revision).toBe(revision++); data = change(data, b); } return r.fulfill({ json: { revision, data } }); });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
+  await page.goto('/app/host/properties');await page.getByLabel('New property name', { exact: true }).fill('Synthetic standard property');await page.getByRole('button', { name: 'Create property', exact: true }).click();
+  for (const [kind, count] of [['Regular', 38], ['Deep', 109]]) {
+    await page.getByRole('button', { name: kind + ' Clean List', exact: true }).click();
+    await expect(page.getByText(`Standard ${kind} template · ${count} tasks · 0 not applicable`, { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use standard template', exact: true })).toHaveCount(0);
+  }
+  await page.reload();await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
+  await expect(page.getByText('Standard Regular template · 38 tasks · 0 not applicable', { exact: true })).toBeVisible();
 });

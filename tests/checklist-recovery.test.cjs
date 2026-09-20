@@ -26,3 +26,11 @@ test('adoption remaps applicability by task identity and is idempotent, includin
  const unmatched=structuredClone(original);unmatched.properties[0].regular[0]='Unmatched property-specific task';
  assert.throws(()=>change(unmatched,{action:'template',id:'p',kind:'regular'}));assert.deepEqual(unmatched.properties[0].notApplicable.regular,[0]);
 });
+
+test('new property defaults need no adoption and adopted standards survive property edits/applicability',()=>{
+ let data=change({properties:[]},{action:'property',name:'New property',phone:'',notes:''});const id=data.properties[0].id;
+ assert.equal(data.properties[0].regular.length,38);assert.equal(data.properties[0].deep.length,109);
+ data=change(data,{action:'applicability',id,kind:'regular',index:7,applicable:false});
+ data=change(data,{action:'property',id,name:'Renamed property',phone:'',notes:''});
+ assert.deepEqual(data.properties[0].regular,templates.regular);assert.deepEqual(data.properties[0].deep,templates.deep);assert.deepEqual(data.properties[0].notApplicable.regular,[7]);
+});

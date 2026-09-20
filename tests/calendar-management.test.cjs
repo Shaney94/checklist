@@ -20,3 +20,11 @@ test('foreign calendar ids cannot be viewed, updated, removed or exported',async
 test('calendar mutation rejects cross-origin requests before touching database',async()=>{const r=res(),q=req({action:'remove'});q.headers.origin='https://elsewhere.example';await createHandler(()=>assert.fail('auth not needed'),()=>assert.fail('database'))(q,r);assert.equal(r.code,403);});
 test('background sync rejects missing and incorrect secrets',async()=>{const handler=require('../src/server/handlers/cron/calendars').createHandler(()=>assert.fail('database'));for(const authorization of ['', 'Bearer wrong']){const r=res();await handler({method:'GET',headers:{authorization}},r);assert.equal(r.code,401);}});
 test('property capacity in a description is not invented as reservation guest count',()=>{const bookings=parse(feed([event('a','20260915','20260918','DESCRIPTION:Property sleeps 6 guests\r\n')]),settings);assert.equal(bookings[0].guests,null);});
+test('only complete subscription snapshots can remove reservations; cancellation IDs are explicit',()=>{
+ const {snapshot}=require('../lib/calendar-sync.cjs');
+ const full=feed([event('active')]);
+ for(const partial of [full.replace('END:VCALENDAR',''),full.replace('VERSION:2.0','VERSION:2.0\r\nMETHOD:CANCEL'),full.replace('VERSION:2.0','VERSION:2.0\r\nMETHOD:REQUEST')])assert.throws(()=>snapshot(partial,settings));
+ const cancelled=snapshot(feed([event('cancelled','20260915','20260918','STATUS:CANCELLED\r\n')]),settings);assert.equal(cancelled.bookings.length,0);assert.equal(cancelled.cancelledIds.length,1);assert(!cancelled.cancelledIds[0].includes('cancelled'));
+ assert.throws(()=>snapshot(feed([event('a'),event('a','20260915','20260918','STATUS:CANCELLED\r\n')]),settings));
+ assert.throws(()=>snapshot(feed([event('a','20260915','20260918','STATUS:CANCELLED\r\nRECURRENCE-ID:20260915T150000\r\n')]),settings));
+});

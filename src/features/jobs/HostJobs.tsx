@@ -46,7 +46,7 @@ export default function HostJobs() {
 function JobCard({ job, busy, mutate, reload }: { job: Job; busy: boolean; mutate: (body: object) => Promise<boolean>; reload: () => void }) {
   const [code, setCode] = useState(""), [completion, setCompletion] = useState(false), [issues, setIssues] = useState(false);
   return <section className="section">
-    <h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean · {job.state !== "scheduled" ? stateLabels[job.state] : job.assigned ? "Cleaner assigned" : "Unassigned"}</p>
+    <h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean · {job.state !== "scheduled" ? stateLabels[job.state] : job.assigned ? "Cleaner assigned" : job.automatic ? "Awaiting Cleaner assignment" : "Unassigned"}</p>
     <p>{job.automatic ? "Automatic reservation turnover" : "Manual clean"}{job.plannedAfter ? " · Planned after " + job.plannedAfter.slice(0, 5) : ""}</p>
     {job.needsAttention && <p role="status">Reservation changed or disappeared after work started. Review the retained clean and arrange any further work manually.</p>}
     {!!job.issueCount && <button className="back" onClick={() => setIssues(true)}>View reported issues ({job.issueCount})</button>}
