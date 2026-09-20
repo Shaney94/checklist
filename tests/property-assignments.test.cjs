@@ -6,7 +6,7 @@ const {templates}=require('../lib/checklist-templates.cjs');
 const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const host={id:'host',workspaceId:'host-workspace',role:'host',email:'host@example.test'},cleaner={id:'cleaner',workspaceId:'user:cleaner',role:'cleaner',email:'cleaner@example.test'};
 function res(){return {headers:{},setHeader(k,v){this.headers[k]=v},status(code){this.code=code;return this},json(data){this.data=data;return this}};}
-async function call(user,store,body,query={},deliver=()=>assert.fail('email not expected')){const r=res();await createHandler(async()=>user,()=>store,deliver)({method:body?'POST':'GET',headers:{origin:'https://turnli.io','content-type':'application/json'},body,query},r);return r;}
+async function call(user,store,body,query={},deliver=()=>assert.fail('email not expected')){const r=res();await createHandler(async()=>user,()=>store,deliver,async()=>{})({method:body?'POST':'GET',headers:{origin:'https://turnli.io','content-type':'application/json'},body,query},r);return r;}
 test('property invitation boundary requires authentication, supported roles and correct action',async()=>{
  assert.equal((await call(null,{})).code,401);assert.equal((await call({...cleaner,role:null},{})).code,403);
  for(const [user,action] of [[host,'accept'],[host,'decline'],[cleaner,'invite'],[cleaner,'revoke']])assert.equal((await call(user,{},{action,id})).code,403);
@@ -19,7 +19,7 @@ test('Host invitation scopes property before delivery; normalized email never as
  const failed=await call(host,store,{action:'invite',propertyId:id,email:cleaner.email},{},async()=>{throw Error('private upstream')});assert.equal(failed.code,503);assert(!JSON.stringify(failed.data).includes('private upstream'));assert.equal(calls.at(-1)[2],false);
 });
 test('Cleaner acceptance and reads use authenticated identity, not caller ownership or claims',async()=>{
- const r=await call(cleaner,{accept:async(u,i)=>{assert.deepEqual(u,cleaner);assert.equal(i,id);return {id}}},{action:'accept',id,email:'other@example.test',workspaceId:host.workspaceId});assert.equal(r.code,200);
+ const r=await call(cleaner,{pending:async()=>({id}),accept:async(u,i)=>{assert.deepEqual(u,cleaner);assert.equal(i,id);return {id}}},{action:'accept',id,email:'other@example.test',workspaceId:host.workspaceId});assert.equal(r.code,200);
  const denied=await call(cleaner,{guide:async(u,i)=>{assert.equal(u,cleaner.id);assert.equal(i,id);return null}},undefined,{action:'guide',id});assert.equal(denied.code,404);
  assert.equal((await call(cleaner,{calendars:async()=>[]},undefined,{action:'calendar',id})).code,404);
 });

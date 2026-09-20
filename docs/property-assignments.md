@@ -6,6 +6,16 @@ The server uses the existing Descope SDK to send an email sign-up/sign-in link. 
 
 **Provider configuration:** Descope's management key must permit exact user lookup, and email Magic Link sign-up/sign-in and its email connector/template must be enabled for the project. The redirect is `https://turnli.io/?join=1`. No live external email is sent by tests. Provider failures leave a visible pending invitation with unconfirmed delivery, never a false success. The intended Cleaner can still log in with the same verified email and accept the pending invitation. Account creation, email ownership and property authorization are separate.
 
+## Explicit Cleaner onboarding
+
+Invitation acceptance first matches the authenticated email to a pending, unexpired invitation and existing property. It then loads the verified, enabled Descope identity, explicitly adds `turnli-cleaner` only if missing, and reads back the effective role before accepting. Personal accounts use project roles; existing legacy tenant members use that tenant's roles without adding membership. Host, conflicting, unsupported or malformed roles are not modified. Password, email-code, password recovery and magic-link sign-in all use this same acceptance boundary.
+
+Provisioning failures leave the invitation pending with “Account setup incomplete” and an option to retry acceptance or contact support. SQL acceptance rechecks identity, property, expiry and revocation under the workspace lock after provisioning. A role grant alone does not grant access to the invited property. Provider role updates and SQL acceptance cannot be atomic; if acceptance expires or is revoked during provisioning, the role may remain but the property stays inaccessible.
+
+The management key needs user lookup and role-assignment permissions in the relevant scope. Tests use isolated provider fixtures and PostgreSQL, never real invitations or users. Owner email-code requests now sign in only; they no longer bootstrap new accounts.
+
+**Phase 2 prerequisites:** the central roleless Cleaner fallback remains unchanged, including access to the current invitation inbox/UI. Legacy owner-only “customer” invitations still create roleless tenant membership: their intended role needs an explicit product decision. Existing roleless users require a reviewed migration, and interrupted normal registration needs a fail-closed recovery policy. Before removing the fallback, provide a restricted authenticated invitation inbox/acceptance entry for setup-incomplete accounts; do not open operational APIs. No Production users are migrated by this change.
+
 ## Jobs and revocation
 
 Acceptance assigns existing unassigned scheduled jobs and future jobs inherit the property Cleaner. Existing manual jobs assigned to a different Cleaner are preserved. The original private job-code workflow remains under a secondary disclosure; its explicit per-job assignment can support later overrides without a second job model.

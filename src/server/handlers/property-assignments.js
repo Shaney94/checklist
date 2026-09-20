@@ -2,6 +2,7 @@ const {currentUser,privateHeaders,validOrigin,email}=require('../../../lib/accou
 const {can}=require('../../../lib/authorization.cjs');
 const {uuid}=require('../../../lib/cleaning-jobs.cjs');
 const {createStore}=require('../../../lib/property-assignment-store.cjs');
+const {provisionInvitedCleaner}=require('../../../lib/invitation-onboarding.cjs');
 const {deliverInvitation}=require('../../../lib/property-invitations.cjs');
 const {detectSource,platforms}=require('../../../lib/booking-source.cjs');
 const {createHash}=require('node:crypto');
@@ -14,7 +15,7 @@ function operationalCalendar(rows,month){
  }));
  return {bookings,calendars:[],state:'ready',timeZone:'Europe/London',syncError:rows.some(r=>r.sync_error),hasCalendar:rows.some(r=>r.id)};
 }
-function createHandler(authenticate=currentUser,getStore=createStore,deliver=deliverInvitation){return async(req,res)=>{
+function createHandler(authenticate=currentUser,getStore=createStore,deliver=deliverInvitation,provision=provisionInvitedCleaner){return async(req,res)=>{
  privateHeaders(res);
  if(!['GET','POST'].includes(req.method)){res.setHeader('Allow','GET, POST');return res.status(405).json({error:'Method not allowed.'});}
  if(req.method==='POST'&&(!validOrigin(req)||!String(req.headers['content-type']).startsWith('application/json')))return res.status(403).json({error:'Please use the Turnli website.'});
@@ -43,6 +44,12 @@ function createHandler(authenticate=currentUser,getStore=createStore,deliver=del
    return res.status(201).json({sent:true});
   }
   if(!uuid(b.id))return res.status(400).json({error:'Choose a valid invitation.'});
+  if(b.action==='accept'){
+   // Validate server-held invitation intent before any provider mutation. accept()
+   // rechecks under the workspace lock, including revocation/expiry during setup.
+   if(!await store.pending(user,b.id))return res.status(409).json({error:'This invitation expired, changed or is unavailable for this account.'});
+   try{await provision(user);}catch{return res.status(503).json({code:'setup-incomplete',error:'Account setup incomplete. Your invitation has not been accepted. Try Accept invitation again, or contact support if this continues.'});}
+  }
   const result=b.action==='revoke'?await store.revoke(user.workspaceId,b.id):b.action==='accept'?await store.accept(user,b.id):await store.decline(user,b.id);
   return result?res.status(200).json({saved:true}):res.status(409).json({error:'This invitation expired, changed or is unavailable for this account. Reload assignments.'});
  }catch{return res.status(503).json({error:'Property assignments could not be loaded or saved. Please retry.'});}

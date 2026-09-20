@@ -30,6 +30,7 @@ test('Host invites a property Cleaner, adjusts task applicability and revokes ac
 
 test('Cleaner accepts property invitation and receives calendar, job checklist and guide without adding a feed', { tag: '@critical' }, async ({ page, context, request }, info) => {
   await login(context, request);
+  let setupFails = true;
   let state = 'pending', checked: number[] = [], revision = 0;
   const job = () => ({ id: jobId, propertyId, propertyName: 'Host home', date: '2026-09-21', kind: 'regular', state: 'scheduled', assigned: true, revision, tasks: ['Clean kitchen'], checked, faqs: [] });
   await page.route('**/api/dashboard?*', r => r.fulfill({ json: { sidebarCollapsed: false } }));
@@ -42,7 +43,7 @@ test('Cleaner accepts property invitation and receives calendar, job checklist a
   });
   await page.route('**/api/property-assignments**', r => {
     const q = new URL(r.request().url()).searchParams;
-    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('accept'); expect(b.id).toBe(assignmentId); state = 'active'; return r.fulfill({ json: { saved: true } }); }
+    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('accept'); expect(b.id).toBe(assignmentId); if (setupFails) return r.fulfill({ status: 503, json: { code: 'setup-incomplete', error: 'Account setup incomplete. Your invitation has not been accepted. Try Accept invitation again, or contact support if this continues.' } }); state = 'active'; return r.fulfill({ json: { saved: true } }); }
     if (q.has('action')) {
       expect(q.get('id')).toBe(q.get('action')==='calendar'?'all':assignmentId);
       if (state !== 'active') return r.fulfill({ status: 404, json: { error: 'Property access is no longer available.' } });
@@ -54,6 +55,11 @@ test('Cleaner accepts property invitation and receives calendar, job checklist a
   });
   await page.goto('/app');
   await expect(page.getByText('Invitation to clean:', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Account setup incomplete' })).toBeVisible();
+  await expect(page.locator('.stay-bar')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Read property Start Guide' })).toHaveCount(0);
+  setupFails = false;
   await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
   await expect(page.locator('.stay-bar').first()).toBeVisible();
   await page.getByRole('button', { name: 'Hide this assigned property' }).click();
