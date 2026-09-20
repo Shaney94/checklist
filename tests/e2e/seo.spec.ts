@@ -52,9 +52,36 @@ test('public SEO is server rendered, canonical, crawlable and describes only rea
   await context.close();
 });
 
-test('sitemap and robots expose only intended public URLs; auth and private routes stay protected', { tag: '@critical' }, async ({ page, request, context }) => {
-  const sitemap = await request.get('/sitemap.xml'); expect(sitemap.status()).toBe(200);
-  expect([...((await sitemap.text()).matchAll(/<loc>(.*?)<\/loc>/g))].map(match => match[1])).toEqual(routes.map(route => origin + route));
+test('sitemap is parseable sitemap XML with exactly the canonical public URLs', { tag: '@critical' }, async ({ page, request }) => {
+  const parse = (xml: string) => page.evaluate(source => {
+    const doc = new DOMParser().parseFromString(source, 'application/xml');
+    const root = doc.documentElement;
+    return {
+      errors: doc.getElementsByTagName('parsererror').length,
+      root: root.localName,
+      namespace: root.namespaceURI,
+      entries: Array.from(root.children).map(entry => ({
+        name: entry.localName,
+        namespace: entry.namespaceURI,
+        fields: Array.from(entry.children).map(field => ({ name: field.localName, namespace: field.namespaceURI, value: field.textContent })),
+      })),
+    };
+  }, xml);
+  const namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+  const expected = {
+    errors: 0, root: 'urlset', namespace,
+    entries: routes.map(route => ({ name: 'url', namespace, fields: [{ name: 'loc', namespace, value: origin + route }] })),
+  };
+  // These contain every URL but are not valid sitemap XML.
+  expect(await parse(routes.map(route => origin + route).join('\n'))).not.toEqual(expected);
+  expect(await parse(`<urlset xmlns="${namespace}">${routes.map(route => `<url><loc>${origin + route}</loc></url>`).join('')}`)).not.toEqual(expected);
+  const sitemap = await request.get('/sitemap.xml', { maxRedirects: 0 });
+  expect(sitemap.status()).toBe(200);
+  expect(sitemap.headers()['content-type']).toMatch(/^(?:application|text)\/xml(?:;|$)/i);
+  expect(await parse(await sitemap.text())).toEqual(expected);
+});
+
+test('robots expose public pages; auth and private routes stay protected', { tag: '@critical' }, async ({ page, request, context }) => {
   const robots = await request.get('/robots.txt'); expect(robots.status()).toBe(200);
   const text = await robots.text(); expect(text).toContain('Allow: /'); expect(text).not.toMatch(/^Disallow: \/$/m);
   expect(text).toContain(`Sitemap: ${origin}/sitemap.xml`); expect(text).not.toMatch(/Disallow: \/(?:_next|icons|login|register)/);
