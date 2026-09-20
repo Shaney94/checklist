@@ -22,3 +22,5 @@
 @media(max-width:700px){.auth-header{padding:20px}.auth-layout{display:block;width:min(440px,calc(100% - 32px));margin-top:25px}.auth-story{display:none}.auth-page .card{padding:27px}.auth-page h1{font-size:28px}.auth-home{font-size:12px}}
 @media(max-width:360px){.auth-page .card{padding:23px}.auth-header{padding-inline:16px}}
 @media(prefers-reduced-motion:reduce){.auth-page *{transition:none!important}}
+
+.registration-role{border:1px solid var(--border);border-radius:12px;padding:12px;margin:0 0 18px;min-width:0}.auth-page .registration-role label{display:flex;align-items:center;gap:10px;min-height:44px;margin:0;cursor:pointer}.auth-page .registration-role input{width:20px;min-height:20px;margin:0;flex-shrink:0}

@@ -6,12 +6,14 @@ export default function Dialog({
   open,
   onClose,
   children,
+  showClose = false,
 }: {
   id: string;
   title: string;
   open: boolean;
   onClose: () => void;
   children: ReactNode;
+  showClose?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     close = useRef(onClose);
@@ -35,11 +37,12 @@ export default function Dialog({
       ref={ref}
       id={id}
       aria-labelledby={id + "Title"}
-      onCancel={() => close.current()}
+      onCancel={event => { event.preventDefault(); close.current(); }}
     >
       <h2 id={id + "Title"} tabIndex={-1}>
         {title}
       </h2>
+      {showClose && <button className="back dialog-close" type="button" aria-label="Close" onClick={() => close.current()}>×</button>}
       {children}
     </dialog>
   );

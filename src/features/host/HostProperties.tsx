@@ -12,14 +12,14 @@ export default function HostProperties({ host = true }: { host?: boolean }) {
     <p role="status">{m.status}</p>
     {m.conflict && <button className="back" onClick={() => void m.load()}>Reload properties</button>}
     <form onSubmit={async e => { e.preventDefault(); if (await m.save({ action: "property", name, phone: "", notes: "" })) setName(""); }}>
-      <label className="field">New property name<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label><button className="primary" disabled={m.busy || !m.ready}>Create property</button>
+      <label className="field">New property label<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label><button className="primary" disabled={m.busy || !m.ready}>Create property</button>
     </form>
     <label className="field">Find a property<input type="search" value={search} onChange={e => setSearch(e.target.value)} /></label>
     <label className="field">Property<select value={m.selected} onChange={e => { m.setSelected(e.target.value); setKind(null); }}><option value="">Choose a property</option>{m.state.data.properties.filter(p => p.id === m.selected || p.name.toLowerCase().includes(search.toLowerCase())).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     {m.property && <>
       {host && <PropertyAssignment key={m.property.id} propertyId={m.property.id} />}
       <form key={m.property.id + m.property.name} onSubmit={e => { e.preventDefault(); const data = new FormData(e.currentTarget); void m.save({ action: "property", id: m.property!.id, name: data.get("name"), phone: m.property!.phone, notes: m.property!.notes }); }}>
-        <label className="field">Property name<input required name="name" maxLength={100} defaultValue={m.property.name} /></label><button className="back" disabled={m.busy}>Save property name</button>
+        <label className="field">Property label<input required name="name" maxLength={100} defaultValue={m.property.name} /></label><button className="back" disabled={m.busy}>Save property label</button>
       </form>
       <p>Review the cleaning tasks for this property and mark any that do not apply. Updates apply to new and untouched planned jobs. Started and completed checklists stay unchanged.</p>
       <div className="dialog-actions">{(["regular", "deep", "faqs"] as Kind[]).map(k => <button className="back" key={k} onClick={() => setKind(k)}>{k === "faqs" ? "FAQs" : k === "regular" ? "Regular Clean List" : "Deep Clean List"}</button>)}</div>

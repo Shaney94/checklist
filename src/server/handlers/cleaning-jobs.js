@@ -2,7 +2,7 @@ const {currentUser,privateHeaders,validOrigin}=require('../../../lib/account.cjs
 const {can}=require('../../../lib/authorization.cjs');
 const {createStore}=require('../../../lib/cleaning-job-store.cjs');
 const {uuid,code,date,eligibleCleaner}=require('../../../lib/cleaning-jobs.cjs');
-function createHandler(authenticate=currentUser,getStore=createStore,eligible=eligibleCleaner){return async(req,res)=>{
+function createHandler(authenticate=currentUser,getStore=createStore,eligible=eligibleCleaner,getContext=require('../../../lib/cleaner-context-store.cjs').createStore){return async(req,res)=>{
  privateHeaders(res);
  if(!['GET','POST'].includes(req.method)){res.setHeader('Allow','GET, POST');return res.status(405).json({error:'Method not allowed.'});}
  if(req.method==='POST'&&(!validOrigin(req)||!String(req.headers['content-type']).startsWith('application/json')))return res.status(403).json({error:'Please use the Turnli website.'});
@@ -11,8 +11,12 @@ function createHandler(authenticate=currentUser,getStore=createStore,eligible=el
   const host=can(user,'jobs.manage'),cleaner=can(user,'jobs.assigned');
   if(!user.id||(!host&&!cleaner))return res.status(403).json({error:'Cleaning jobs are not available for this account.'});
   const b=req.body||{};
-  if(req.method==='POST'&&!(host?['create','assign','unassign','cancel']:['code','check']).includes(b.action))return res.status(403).json({error:'You do not have permission to perform this job action.'});
+  if(req.method==='POST'&&!(host?['create','assign','unassign','cancel']:['code','replace-code','check']).includes(b.action))return res.status(403).json({error:'You do not have permission to perform this job action.'});
   if(req.method==='GET'&&req.query?.id&&!cleaner)return res.status(403).json({error:'Use the Host job list.'});
+  if(req.method==='GET'&&req.query?.action==='properties'){
+   if(!cleaner)return res.status(403).json({error:'Cleaner property context only.'});
+   return res.status(200).json({properties:await getContext().properties(user)});
+  }
   const store=getStore();
   if(req.method==='GET'){
    if(req.query?.id){
@@ -25,9 +29,13 @@ function createHandler(authenticate=currentUser,getStore=createStore,eligible=el
    }
    return res.status(200).json({jobs:await store.list(user,host),...(cleaner?{hasCode:await store.code(user.id)}:{})});
   }
-  if(b.action==='code'){
+  if(b.action==='code'||b.action==='replace-code'){
    if(!cleaner)return res.status(403).json({error:'Only Cleaners can generate an assignment code.'});
-   return res.status(200).json({code:await store.rotateCode(user.id)});
+   if(b.action==='replace-code'){
+    if(b.confirm!==true)return res.status(400).json({error:'Confirm replacement. The previous code will stop working.'});
+    return res.status(200).json({code:await store.rotateCode(user.id),legacy:false});
+   }
+   return res.status(200).json(await store.ensureCode(user.id));
   }
   if(b.action==='check'){
    if(!cleaner)return res.status(403).json({error:'Only the assigned Cleaner can update tasks.'});

@@ -37,11 +37,11 @@ test('Host creates and renames a property, configures tasks, then creates, assig
   });
   await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app/host/properties');
-  await page.getByLabel('New property name', { exact: true }).fill('Synthetic property');
+  await page.getByLabel('New property label', { exact: true }).fill('Synthetic property');
   await page.getByRole('button', { name: 'Create property', exact: true }).click();
-  await page.getByLabel('Property name', { exact: true }).fill('Renamed property');
-  await page.getByRole('button', { name: 'Save property name' }).click();
-  await expect(page.getByLabel('Property name', { exact: true })).toHaveValue('Renamed property');
+  await page.getByLabel('Property label', { exact: true }).fill('Renamed property');
+  await page.getByRole('button', { name: 'Save property label' }).click();
+  await expect(page.getByLabel('Property label', { exact: true })).toHaveValue('Renamed property');
   await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
   await page.getByLabel('Checklist items').fill('Synthetic kitchen task\nSynthetic bathroom task');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -68,7 +68,7 @@ test('Cleaner generates a code, checks assigned tasks and reads a guide; revoked
   let revision = 0, checked: number[] = [], revoked = false, hasCode = false, collapsed = false;
   const job = { id: jobId, propertyId, propertyName: 'Assigned property', date: '2026-09-24', kind: 'regular', state: 'scheduled', assigned: true };
   await page.route('**/api/dashboard?action=preferences', route => route.fulfill({ json: { sidebarCollapsed: collapsed } }));
-  await page.route('**/api/dashboard', route => { const b = route.request().postDataJSON(); expect(b.action).toBe('preferences'); collapsed = b.sidebarCollapsed; return route.fulfill({ json: { sidebarCollapsed: collapsed } }); });
+  await page.route('**/api/dashboard', route => { if(route.request().method()==='GET')return route.fulfill({json:{revision:0,data:{properties:[]}}}); const b = route.request().postDataJSON(); expect(b.action).toBe('preferences'); collapsed = b.sidebarCollapsed; return route.fulfill({ json: { sidebarCollapsed: collapsed } }); });
   await page.route('**/api/cleaning-jobs**', route => {
     if (route.request().method() === 'POST') {
       const b = route.request().postDataJSON();
@@ -76,6 +76,7 @@ test('Cleaner generates a code, checks assigned tasks and reads a guide; revoked
       expect(b.action).toBe('check'); expect(b.id).toBe(jobId); expect(b.revision).toBe(revision++); checked = b.checked ? [b.index] : [];
       return route.fulfill({ json: { saved: true } });
     }
+    if(new URL(route.request().url()).searchParams.get('action')==='properties')return route.fulfill({json:{properties:revoked?[]:[{id:propertyId,name:'Assigned property',source:'assigned',regular:['Synthetic cleaning task'],deep:[],jobId}]}});
     const id = new URL(route.request().url()).searchParams.get('id');
     if (id) { expect(id).toBe(jobId); return route.fulfill({ json: { ...job, revision, checked, tasks: ['Synthetic cleaning task'], faqs: [] } }); }
     return route.fulfill({ json: { jobs: revoked ? [] : [{ ...job, revision }], hasCode } });
@@ -86,14 +87,12 @@ test('Cleaner generates a code, checks assigned tasks and reads a guide; revoked
   });
   await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
   await page.goto('/app#jobs');
-  await page.getByText('Private assignment code', { exact: true }).click();
-  await page.getByRole('button', { name: 'Generate assignment code', exact: true }).click();
+  await expect(page.getByRole('button', {name:'Copy code'})).toBeVisible();
   await expect(page.getByLabel('Your assignment code', { exact: false })).toHaveValue(code);
-  await page.getByRole('button', { name: 'Open clean list', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Synthetic cleaning task' }).check();
   await expect(page.getByText('Progress saved.', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('Your assignment code', { exact: false })).toHaveCount(0);
+  await expect(page.getByLabel('Your assignment code', { exact: false })).toHaveValue(code);
   await expect(page.getByRole('checkbox', { name: 'Synthetic cleaning task' })).toBeChecked();
   if (info.project.name === 'desktop') {
     await page.getByRole('button', { name: 'Collapse sidebar' }).click();
@@ -104,6 +103,7 @@ test('Cleaner generates a code, checks assigned tasks and reads a guide; revoked
   } else await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: 'Start Guide', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Property Start Guide' });
+  await dialog.getByLabel('Choose property').selectOption(propertyId);
   await expect(dialog.getByText('Synthetic restricted instructions', { exact: true })).toBeVisible();
   await expect(dialog.locator('textarea')).toHaveCount(0);
   expect(await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }))).not.toContain('Synthetic');
@@ -138,7 +138,8 @@ test('unassigned Cleaner stays empty, retains renewed authentication and reduced
   await expect(page.getByText(/No assigned jobs/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Resume reminders' })).toBeVisible();
   await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
-  await expect(page.getByText('Choose an assigned job to see its cleaning tasks and guidance.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Turnli standard',exact:true})).toBeVisible();
+  await expect(page.locator('.cleaner-reference-list li')).toHaveCount(38);
   await expect(page.getByRole('checkbox')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add property' })).toHaveCount(0);
   await page.goBack();

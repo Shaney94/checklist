@@ -3,6 +3,7 @@ const {createHandler}=require('../src/server/handlers/cleaning-jobs.js');
 const {createHandler:guideHandler}=require('../src/server/handlers/start-guide.js');
 const {eligibleCleaner,date}=require('../lib/cleaning-jobs.cjs');
 const {createStore}=require('../lib/cleaning-job-store.cjs');
+process.env.TURNLI_CONTENT_KEY=require('node:crypto').randomBytes(32).toString('base64');
 const host={id:'host',role:'host',workspaceId:'workspace-a'},cleaner={id:'cleaner',role:'cleaner',workspaceId:'workspace-b'};
 const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',code='a'.repeat(43);
 const response=()=>({headers:{},setHeader(k,v){this.headers[k]=v},status(code){this.code=code;return this},json(data){this.data=data;return this}});
@@ -17,7 +18,7 @@ test('Cleaner cannot create jobs, assign themselves or generate codes for anothe
   const r=response();await createHandler(async()=>cleaner,()=>assert.fail('unauthorized action accessed store'))(request({action,id,role:'host',workspaceId:host.workspaceId}),r);assert.equal(r.code,403);
  }
  assert.equal((await call(host,{}, {action:'code'})).code,403);
- const r=await call(cleaner,{rotateCode:async user=>{assert.equal(user,cleaner.id);return code}},{action:'code',userId:'victim',role:'host'});assert.deepEqual(r.data,{code});
+ const r=await call(cleaner,{ensureCode:async user=>{assert.equal(user,cleaner.id);return {code}}},{action:'code',userId:'victim',role:'host'});assert.deepEqual(r.data,{code});
 });
 test('Host cannot use Cleaner detail endpoints even when storage is unavailable',async()=>{
  const r=response();await createHandler(async()=>host,()=>assert.fail('store accessed'))(request(undefined,{id}),r);assert.equal(r.code,403);
@@ -77,4 +78,16 @@ test('assigned job responses expose operational fields only, never Host contact 
  const job={id,propertyId:id,propertyName:'Synthetic property',state:'scheduled',tasks:['Clean kitchen'],checked:[],revision:0,hostPhone:'+447700900000',email:'private@example.test',owner_id:'host-private',cleaner_user_id:'private-cleaner',calendarURL:'https://private.example/feed'};
  const r=await call(cleaner,{assigned:async(user,jobId)=>{assert.equal(user,cleaner.id);assert.equal(jobId,id);return job}},undefined,{id});
  assert.equal(r.code,200);assert.deepEqual(r.data,{id,propertyId:id,propertyName:'Synthetic property',state:'scheduled',tasks:['Clean kitchen'],checked:[],revision:0});
+});
+test('code replacement requires confirmation and only authenticated Cleaner identity reaches storage',async()=>{
+ let calls=0;const store={rotateCode:async user=>{assert.equal(user,cleaner.id);calls++;return code}};
+ assert.equal((await call(cleaner,store,{action:'replace-code',confirm:false})).code,400);assert.equal(calls,0);
+ assert.equal((await call(cleaner,store,{action:'replace-code',confirm:true,userId:'victim'})).code,200);assert.equal(calls,1);
+ assert.equal((await call(host,store,{action:'replace-code',confirm:true})).code,403);
+});
+test('property context rejects Host or anonymous callers and never accepts caller identity',async()=>{
+ for(const user of [null,host,cleaner]){
+  const r=response();await createHandler(async()=>user,()=>assert.fail('job store unnecessary'),async()=>true,()=>({properties:async u=>{assert.equal(u,cleaner);return []}}))(request(undefined,{action:'properties',userId:'victim',workspaceId:'other'}),r);
+  assert.equal(r.code,user===cleaner?200:user?403:401);
+ }
 });

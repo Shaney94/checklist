@@ -9,6 +9,8 @@ const defaultPolicy: PasswordPolicy = { minLength: 8 };
 
 export default function Login({ initialScreen = 'password' }: { initialScreen?: 'password' | 'register' }) {
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [role, setRole] = useState<'host' | 'cleaner' | ''>('');
+  const [invited, setInvited] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -35,6 +37,7 @@ export default function Login({ initialScreen = 'password' }: { initialScreen?: 
     destination.current = loginDestination(location.search, location.hash);
     const token = params.get('t');
     if (token) { invitationToken.current = token; setHasInvitationLink(true); params.delete('t'); history.replaceState(null, '', location.pathname + '?' + params.toString()); }
+    if (params.has('join') || token) { setInvited(true); setRole('cleaner'); }
     if (params.has('join')) setIntro('Welcome to Turnli. Sign in with your invited email, then accept the property invitation in your workspace. You can set your own password using Forgot password.');
     if (params.has('reset')) setIntro('To set or change your password, enter your email and choose Forgot password. We’ll verify it with a code.');
     const controller = new AbortController();
@@ -95,8 +98,9 @@ export default function Login({ initialScreen = 'password' }: { initialScreen?: 
     event.preventDefault();
     void run(async () => {
       if (password !== confirmation) throw new Error('The passwords do not match.');
-      try { await requestAccount({ action: 'register', email: email.trim(), password }); }
+      try { await requestAccount({ action: 'register', email: email.trim(), password, role }); }
       catch (error) {
+        if (error instanceof AccountError && error.nextAction === 'setup-required') throw error;
         if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'TypeError' || (error instanceof AccountError && error.status >= 500))) {
           enterCode(false); setCooldown(0);
           setStatus('We couldn’t confirm the signup response. Your account may have been created. If Resend code asks you to log in, choose Back and use the password you just created to resume verification.');
@@ -142,6 +146,10 @@ export default function Login({ initialScreen = 'password' }: { initialScreen?: 
         <div className="divider">or</div><button disabled={busy} id="emailLoginCode" className="secondary" type="button" onClick={() => sendCode(false)}>Email me a login code</button>
       </form>}
       {screen === 'register' && <form id="registerForm" onSubmit={register}>
+        {invited ? <p>You’re joining as a Cleaner. Sign in with your invited email to accept Host-assigned work.</p> : <fieldset className="registration-role"><legend>How will you use Turnli?</legend>
+          <label><input type="radio" name="role" value="host" required checked={role === 'host'} onChange={() => setRole('host')} /> I’m a Host</label>
+          <label><input type="radio" name="role" value="cleaner" required checked={role === 'cleaner'} onChange={() => setRole('cleaner')} /> I’m a Cleaner</label>
+        </fieldset>}
         <label htmlFor="registerEmail">Email address</label><input ref={registerRef} id="registerEmail" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} />
         <label htmlFor="registerPassword">Password</label><input id="registerPassword" type="password" autoComplete="new-password" required minLength={policy.minLength} maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} aria-describedby="registerRequirements" />
         <p className="helper" id="registerRequirements">{policyMessage(policy)}</p>

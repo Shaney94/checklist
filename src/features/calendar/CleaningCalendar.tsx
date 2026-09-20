@@ -34,7 +34,7 @@ export default function CleaningCalendar({
     );
   const time = (b: Booking["arrival"]) => b.time || "Time not provided";
   const label = (b: Booking) =>
-    `${b.property} · ${b.source || "Reservation"} · Check-in ${full(b.arrival.date)} ${time(b.arrival)} · Check-out ${full(b.checkout.date)} ${time(b.checkout)}${b.guests ? " · " + b.guests + " guests" : ""}`;
+    `${b.property}${b.ownership ? " · " + (b.ownership === "assigned" ? "Assigned work" : "My customers") : ""} · ${b.source || "Reservation"} · Check-in ${full(b.arrival.date)} ${time(b.arrival)} · Check-out ${full(b.checkout.date)} ${time(b.checkout)}${b.guests ? " · " + b.guests + " guests" : ""}`;
   const monthEnd = iso(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 12)));
   const zone = timezoneLabel(m.month, monthEnd, m.zone);
   return (

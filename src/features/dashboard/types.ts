@@ -55,6 +55,8 @@ export type Calendar = {
   checkOut: string;
 };
 export type Booking = {
+  propertyId?: string;
+  ownership?: "assigned" | "customer";
   id: string;
   property: string;
   source?: string;

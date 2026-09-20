@@ -47,7 +47,7 @@ export function PropertySetup({
     <Dialog id="propertyDialog" title="Property setup" open onClose={onClose}>
       <form onSubmit={submit}>
         <label className="field">
-          Property name
+          Property label
           <input
             autoFocus
             required
@@ -97,11 +97,13 @@ export default function WorkspaceTools({
   model: m,
   kind,
   setupOnly = false,
+  displayName,
   onClose,
 }: {
   model: WorkspaceModel;
   kind: Kind;
   setupOnly?: boolean;
+  displayName?: string;
   onClose: () => void;
 }) {
   const p = m.property!;
@@ -148,7 +150,7 @@ export default function WorkspaceTools({
       <h2 id="workspaceContentTitle" tabIndex={-1}>
         {labels[kind]}
       </h2>
-      <p className="calendar-help">{p.name}</p>
+      <p className="calendar-help">{displayName || p.name}</p>
       {kind !== "faqs" && <>
         <p>{standard ? "Standard" : "Custom / earlier"} {kind === "regular" ? "Regular" : "Deep"} template · {p[kind].length} tasks · {p.notApplicable?.[kind]?.length || 0} not applicable</p>
         {!standard && <button className="back" disabled={m.busy || !canAdopt} onClick={async () => {

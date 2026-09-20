@@ -30,3 +30,6 @@
 .assigned-property-actions{display:flex;gap:8px;flex-wrap:wrap}
 .assigned-work .dialog-actions{margin-top:14px}
 .cleaner-account-settings a.back{color:var(--accent2)}
+
+.dialog-close{position:absolute;right:12px;top:12px;min-width:44px;min-height:44px;font-size:24px;line-height:1}dialog:has(.dialog-close)>h2{padding-right:48px}
+.assignment-code{margin-top:24px;border-top:1px solid var(--border);padding-top:16px}.assignment-code input{font-family:monospace;max-width:100%;min-width:0;width:100%;font-size:1rem}.assignment-code button{margin:6px 8px 0 0}.cleaner-reference-list{padding-left:24px}.cleaner-reference-list li{padding:8px 0;line-height:1.5}.job-workspace select{max-width:100%;min-height:44px}.job-workspace summary{min-height:44px;padding-block:10px;cursor:pointer}.cleaner-workspace h2,.cleaner-workspace h3{overflow-wrap:anywhere}

@@ -32,7 +32,7 @@ test('Host creates property guides, retains edits on conflict and isolates each 
   });
   await page.goto('/app/host/cleaning-setup');
   await page.getByText('Add a property', { exact: true }).click();
-  await page.getByLabel('Property name', { exact: true }).fill('Guide test property');
+  await page.getByLabel('Property label', { exact: true }).fill('Guide test property');
   await page.getByRole('button', { name: 'Create property' }).click();
   for (const [key, label] of Object.entries(guideFields)) await page.getByLabel(label, { exact: true }).fill('Synthetic ' + key + ' instructions');
   await page.getByRole('button', { name: 'Save Start Guide' }).click();
@@ -40,7 +40,7 @@ test('Host creates property guides, retains edits on conflict and isolates each 
   await page.reload();
   await expect(page.getByLabel('Access instructions', { exact: true })).toHaveValue('Synthetic access instructions');
   await page.getByText('Add a property', { exact: true }).click();
-  await page.getByLabel('Property name', { exact: true }).fill('Second guide property');
+  await page.getByLabel('Property label', { exact: true }).fill('Second guide property');
   await page.getByRole('button', { name: 'Create property' }).click();
   await expect(page.getByLabel('Access instructions', { exact: true })).toHaveValue('');
   await page.getByRole('combobox', { name: 'Property', exact: true }).selectOption('property-1');

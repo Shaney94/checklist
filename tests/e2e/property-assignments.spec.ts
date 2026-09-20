@@ -36,18 +36,19 @@ test('Cleaner accepts property invitation and receives calendar, job checklist a
   await page.route('**/api/dashboard', r => r.fulfill({ json: { revision: 0, data: { properties: [] } } }));
   await page.route('**/api/calendar?*', r => r.fulfill({ json: { state: 'not-connected', calendars: [], bookings: [] } }));
   await page.route('**/api/cleaning-jobs**', r => {
-    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('check'); expect(b.revision).toBe(revision++); checked = [0]; return r.fulfill({ json: { saved: true } }); }
+    if(new URL(r.request().url()).searchParams.get('action')==='properties')return r.fulfill({json:{properties:state==='active'?[{id:propertyId,name:'Host home',source:'assigned',regular:['Clean kitchen'],deep:[],assignmentId}]:[]}});
+    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); if(b.action==='code')return r.fulfill({json:{code:'a'.repeat(43),legacy:false}}); expect(b.action).toBe('check'); expect(b.revision).toBe(revision++); checked = [0]; return r.fulfill({ json: { saved: true } }); }
     return r.fulfill({ json: new URL(r.request().url()).searchParams.has('id') ? job() : { jobs: state === 'active' ? [job()] : [], hasCode: false } });
   });
   await page.route('**/api/property-assignments**', r => {
     const q = new URL(r.request().url()).searchParams;
     if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('accept'); expect(b.id).toBe(assignmentId); state = 'active'; return r.fulfill({ json: { saved: true } }); }
     if (q.has('action')) {
-      expect(q.get('id')).toBe(assignmentId);
+      expect(q.get('id')).toBe(q.get('action')==='calendar'?'all':assignmentId);
       if (state !== 'active') return r.fulfill({ status: 404, json: { error: 'Property access is no longer available.' } });
       if (q.get('action') === 'guide') return r.fulfill({ json: { revision: 1, guide: { access: 'Synthetic private instructions' } } });
       const month = q.get('month')!;
-      return r.fulfill({ json: { state: 'ready', calendars: [], hasCalendar: true, timeZone: 'Europe/London', bookings: [{ id: 'opaque', property: 'Host home', source: 'Airbnb', sourceKey: 'airbnb', guests: 2, arrival: { date: month + '-10', time: '15:00' }, checkout: { date: month + '-13', time: '10:00' } }] } });
+      return r.fulfill({ json: { state: 'ready', calendars: [], hasCalendar: true, timeZone: 'Europe/London', bookings: [{ id: 'opaque', propertyId, property: 'Host home', source: 'Airbnb', sourceKey: 'airbnb', guests: 2, arrival: { date: month + '-10', time: '15:00' }, checkout: { date: month + '-13', time: '10:00' } }] } });
     }
     return r.fulfill({ json: { assignments: state === 'revoked' ? [] : [{ id: assignmentId, propertyId, propertyName: 'Host home', state }] } });
   });
@@ -65,10 +66,8 @@ test('Cleaner accepts property invitation and receives calendar, job checklist a
   await expect(page.getByText('Synthetic private instructions')).toBeVisible();
   await expect(page.getByRole('dialog').locator('textarea')).toHaveCount(0);
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('region', { name: 'Assigned work', exact: true }).getByRole('button', { name: 'My customers', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Add customer property', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Assigned work', exact: true }).click();
-  await page.goto('/app#regular');
+
+  await page.goto('/app#jobs');
   await page.getByRole('checkbox', { name: 'Clean kitchen', exact: true }).check();
   await expect(page.getByRole('button', { name: 'Complete clean', exact: true })).toBeEnabled();
   await page.reload();
@@ -90,9 +89,9 @@ test('new Cleaner sees helpful first use and safe network errors', async ({ page
   await page.route('**/api/dashboard?*', r => r.fulfill({ json: { sidebarCollapsed: false } }));
   await page.route('**/api/calendar?*', r => r.abort('failed'));
   await page.goto('/app');
-  await expect(page.getByText('No assigned properties yet. Invitations from your Host will appear here.')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Your calendar' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Calendar empty state' })).toContainText('Check your connection');
+  await expect(page.getByText(/No assigned properties yet\./)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Turnli Cleaning Calendar',exact:true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Cleaning calendar' })).toContainText('Check your connection');
   await expect(page.locator('body')).not.toContainText('Failed to fetch');
 });
 
@@ -150,7 +149,7 @@ test('Host creates a property with standard lists automatically and no adoption 
   let data = { properties: [] }, revision = 0;
   await page.route('**/api/dashboard', r => { if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('property'); expect(b.revision).toBe(revision++); data = change(data, b); } return r.fulfill({ json: { revision, data } }); });
   await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
-  await page.goto('/app/host/properties');await page.getByLabel('New property name', { exact: true }).fill('Synthetic standard property');await page.getByRole('button', { name: 'Create property', exact: true }).click();
+  await page.goto('/app/host/properties');await page.getByLabel('New property label', { exact: true }).fill('Synthetic standard property');await page.getByRole('button', { name: 'Create property', exact: true }).click();
   for (const [kind, count] of [['Regular', 38], ['Deep', 109]]) {
     await page.getByRole('button', { name: kind + ' Clean List', exact: true }).click();
     await expect(page.getByText(`Standard ${kind} template · ${count} tasks · 0 not applicable`, { exact: true })).toBeVisible();

@@ -8,9 +8,12 @@ navigation, after authenticating every request.
 ## Assignment and compatibility
 
 Accounts without an explicit Turnli role remain **cleaners**. To enable Host,
-an administrator assigns `turnli-host` in Descope. `turnli-cleaner` explicitly
-selects Cleaner. No signup parameter, URL, browser state, email/account type or
-editable profile attribute grants a role.
+new registrations explicitly choose Host or Cleaner. The server provisions only
+`turnli-host` or `turnli-cleaner` on the freshly created Descope identity, using
+`DESCOPE_MANAGEMENT_KEY`; those project roles must exist in Descope. Existing
+accounts cannot change roles through signup. No workspace, tenant, protected role,
+URL or editable profile attribute grants access. Provisioning failure is explicit
+and must be resolved before completing the new account setup.
 
 Roles are read from the authenticated provider `/me` response, not decoded
 client claims. For the existing shared workspace, only that tenant's
@@ -37,7 +40,7 @@ Cleaner calendar/property administration uses `managedWorkspace(user)` from the 
 
 Migration 006 adds nullable property IDs to calendars. New feeds require explicit selection of a property in the managed workspace. Existing feeds stay unlinked until explicitly linked; existing owners are not changed. A link never establishes a job assignment or grants access to a Start Guide. Shared legacy tenant feeds are not copied or assigned to individuals without reliable ownership evidence.
 
-See [Cleaning jobs](cleaning-jobs.md) for the assignment model, migration 005 and focused persistence/isolation checks. Role routing itself needs no migration and does not change provider role assignments. Invitations, multi-workspace switching and team management are not implemented.
+See [Cleaning jobs](cleaning-jobs.md) for the assignment model, migration 005 and focused persistence/isolation checks. Property invitations use the existing assignment model. Multi-workspace switching and team management are not implemented.
 
 ## Property Start Guide
 

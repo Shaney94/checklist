@@ -24,6 +24,7 @@ test('signup enters verification even when code delivery fails, then resends suc
   await page.getByLabel('Email address').fill('synthetic@example.com');
   await page.getByLabel('Password', { exact: true }).fill('Synthetic-test-123!');
   await page.getByLabel('Confirm password').fill('Synthetic-test-123!');
+  await page.getByRole('radio', {name:'I’m a Cleaner'}).check();
   await page.getByRole('button', { name: 'Create account →', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check your email');
   await expect(page.getByRole('status')).toContainText('Your account was created');
@@ -47,6 +48,7 @@ test('duplicate signup recovers through password verification and retains safe d
   await page.getByLabel('Email address').fill('synthetic@example.com');
   await page.getByLabel('Password', { exact: true }).fill('Synthetic-test-123!');
   await page.getByLabel('Confirm password').fill('Synthetic-test-123!');
+  await page.getByRole('radio', {name:'I’m a Cleaner'}).check();
   await page.getByRole('button', { name: 'Create account →', exact: true }).click();
   await page.getByRole('button', { name: 'Log in to continue' }).click();
   await expect(page.getByLabel('Email address')).toHaveValue('synthetic@example.com');
@@ -91,4 +93,27 @@ test('production Next route denies anonymous dashboard access and retains privac
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome back');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   await page.screenshot({ path: testInfo.outputPath('login.png'), fullPage: true });
+});
+
+for(const role of ['host','cleaner'] as const)test(`explicit ${role} signup retains server-authorised workspace routing`,{tag:'@critical'},async({page,context,request})=>{
+ let chosen='',authenticated=false;
+ await page.route('**/api/account**',async r=>{
+  if(r.request().method()==='GET'&&authenticated)return r.continue();
+  if(r.request().method()==='GET')return r.fulfill({json:r.request().url().includes('policy')?{policy:{minLength:8}}:{user:null}});
+  const body=r.request().postDataJSON();
+  if(body.action==='register'){expect(body.role).toBe(role);expect(Object.keys(body).sort()).toEqual(['action','email','password','role']);chosen=body.role;return r.fulfill({status:201,json:{accountCreated:true,verificationRequired:true}});}
+  if(body.action==='verify-code'){authenticated=true;expect(chosen).toBe(role);const tokens=await(await request.get('http://127.0.0.1:3101/tokens'+(role==='host'?'?role=host':''))).json();await context.setExtraHTTPHeaders({Cookie:'__Host-turnly-session='+tokens.session+'; __Host-turnly-refresh='+tokens.refresh});}
+  return r.fulfill({json:{ok:true}});
+ });
+ await page.goto('/register');await page.getByRole('radio',{name:role==='host'?'I’m a Host':'I’m a Cleaner'}).check();await page.getByLabel('Email address').fill('synthetic@example.com');await page.getByLabel('Password',{exact:true}).fill('Synthetic123!');await page.getByLabel('Confirm password').fill('Synthetic123!');await page.getByRole('button',{name:'Create account →',exact:true}).click();await page.getByLabel('Email code').fill('123456');await page.getByRole('button',{name:'Log in →',exact:true}).click();await expect(page).toHaveURL(role==='host'?/\/app\/host$/:/\/app$/);
+});
+
+test('signup setup failure stays explicit and invitation registration remains Cleaner-only', async({page})=>{
+ await account(page,()=>({status:503,body:{nextAction:'setup-required',error:'Your account was created, but workspace setup could not finish. Contact support before continuing.'}}));
+ await page.goto('/register?join=1');
+ await expect(page.getByRole('radio',{name:'I’m a Host'})).toHaveCount(0);
+ await page.getByLabel('Email address').fill('synthetic@example.com');await page.getByLabel('Password',{exact:true}).fill('Synthetic123!');await page.getByLabel('Confirm password').fill('Synthetic123!');await page.getByRole('button',{name:'Create account →',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('workspace setup could not finish');
+ await expect(page.getByRole('heading',{level:1})).toHaveText('Create your account');
+ await expect(page.getByLabel('Email address')).toHaveValue('synthetic@example.com');
 });

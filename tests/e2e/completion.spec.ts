@@ -10,7 +10,8 @@ test('Cleaner opens next turnover, reads guide, reports an issue and submits loc
   const job = () => ({ id: jobId, propertyId, propertyName: 'Synthetic property', date: '2026-09-19', kind: 'regular', state, revision, assigned: true, automatic: true, plannedAfter: '10:00:00', hostPhone: '+447700900123', tasks: ['Synthetic cleaning task'], checked, faqs: [] });
   await page.route('**/api/dashboard?*', r => r.fulfill({ json: { sidebarCollapsed: false } }));
   await page.route('**/api/cleaning-jobs**', r => {
-    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.action).toBe('check'); expect(b.revision).toBe(revision++); checked = b.checked ? [0] : []; return r.fulfill({ json: { saved: true } }); }
+    if(new URL(r.request().url()).searchParams.get('action')==='properties')return r.fulfill({json:{properties:[{id:propertyId,name:'Synthetic property',source:'assigned',regular:['Synthetic cleaning task'],deep:[],jobId}]}});
+    if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); if(b.action==='code')return r.fulfill({json:{code:'a'.repeat(43),legacy:false}}); expect(b.action).toBe('check'); expect(b.revision).toBe(revision++); checked = b.checked ? [0] : []; return r.fulfill({ json: { saved: true } }); }
     return r.fulfill({ json: new URL(r.request().url()).searchParams.has('id') ? job() : { jobs: [job()], hasCode: false } });
   });
   await page.route('**/api/completion**', r => {

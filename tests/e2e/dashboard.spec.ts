@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { login, fixtures } from "../fixtures/dashboard";
-for (const role of ["host", "cleaner"] as const) test(`${role} calendar keeps continuous bars, details, management, filters and copying`, async ({
+test("Host calendar keeps continuous bars, details, management, filters and copying", async ({
   page,
   context,
   request,
 }, info) => {
-  await login(context, request, role === "host" ? "host" : undefined);
+  await login(context, request, "host");
   const actions = await fixtures(page);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -23,7 +23,7 @@ for (const role of ["host", "cleaner"] as const) test(`${role} calendar keeps co
       },
     }),
   );
-  await page.goto(role === "host" ? "/app/host/reservations" : "/app");
+  await page.goto("/app/host/reservations");
   await expect(
     page.getByRole("heading", { name: "Turnli Cleaning Calendar" }),
   ).toBeVisible();
@@ -52,7 +52,7 @@ for (const role of ["host", "cleaner"] as const) test(`${role} calendar keeps co
     .getByRole("button", { name: "+ Add calendar", exact: true })
     .click();
   await page.getByLabel("Calendar/property name").fill("Second property");
-  await page.getByRole("combobox", { name: role === "host" ? "Workspace property" : "Customer property", exact: true }).selectOption("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  await page.getByRole("combobox", { name: "Workspace property", exact: true }).selectOption("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   await page.getByLabel("iCal URL").fill("https://example.com/second.ics");
   await page.getByRole("button", { name: "Connect calendar" }).click();
   await expect(page.locator(".connected-calendar")).toHaveCount(2);
@@ -187,4 +187,90 @@ test("unknown and overlapping bookings stay distinct without invented metadata",
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('overlapping-month.png'), fullPage: true });
+});
+
+test("Cleaner combined calendar keeps customer management separate and checklist progress job-scoped", async ({ page, context, request }, info) => {
+  await login(context, request);
+  await fixtures(page);
+  const customerId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const propertyId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const jobId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const errors: string[] = [], actions: string[] = [];
+  let calendarName = "Customer feed", revision = 0, checked: number[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  const job = () => ({ id: jobId, propertyId, propertyName: "Host property", date: "2026-09-24", kind: "regular", state: "scheduled", assigned: true, revision, tasks: ["Saved job task"], checked, faqs: [] });
+  await page.route("**/api/cleaning-jobs**", r => {
+    const q = new URL(r.request().url()).searchParams;
+    if (r.request().method() === "POST") {
+      const body = r.request().postDataJSON();
+      if (body.action === "code") return r.fulfill({ json: { code: "a".repeat(43), legacy: false } });
+      expect(body.action).toBe("check"); expect(body.id).toBe(jobId); expect(body.revision).toBe(revision++);
+      checked = body.checked ? [body.index] : [];
+      actions.push("job-check");
+      return r.fulfill({ json: { saved: true } });
+    }
+    if (q.get("action") === "properties") return r.fulfill({ json: { properties: [
+      { id: customerId, name: "Test property", source: "customer", regular: ["Wipe surfaces", "Check windows"], deep: [] },
+      { id: propertyId, name: "Host property", source: "assigned", regular: ["Current property task"], deep: [], jobId },
+    ] } });
+    return r.fulfill({ json: q.has("id") ? job() : { jobs: [job()] } });
+  });
+  const stay = (id: string, property: string, ownership: string, month: string) => ({ id, propertyId: id, property, ownership, source: "Airbnb", sourceKey: "airbnb", guests: 3, arrival: { date: month + "-03", time: "15:00" }, checkout: { date: month + "-18", time: "10:00" } });
+  await page.route("**/api/calendar**", r => {
+    if (r.request().method() === "POST") {
+      const body = r.request().postDataJSON();
+      expect(body.action).toBe("update"); expect(body.id).toBe("customer-feed"); expect(body.propertyId).toBe(customerId);
+      calendarName = body.name; actions.push("customer-update");
+      return r.fulfill({ json: { ok: true } });
+    }
+    const month = new URL(r.request().url()).searchParams.get("month")!;
+    return r.fulfill({ json: { state: "ready", calendars: [{ id: "customer-feed", propertyId: customerId, name: calendarName, platform: "Airbnb", enabled: true, status: "Connected", checkIn: "15:00", checkOut: "10:00" }], bookings: [stay(customerId, "Test property", "customer", month)] } });
+  });
+  await page.route("**/api/property-assignments**", r => {
+    expect(r.request().method()).toBe("GET");
+    const q = new URL(r.request().url()).searchParams;
+    if (!q.has("action")) return r.fulfill({ json: { assignments: [] } });
+    expect(q.get("action")).toBe("calendar"); expect(q.get("id")).toBe("all");
+    return r.fulfill({ json: { state: "ready", hasCalendar: true, calendars: [], bookings: [stay(propertyId, "Host property", "assigned", q.get("month")!)] } });
+  });
+  await page.goto("/app");
+  const assigned = page.locator(`[data-booking-id="${propertyId}"]`), own = page.locator(`[data-booking-id="${customerId}"]`);
+  await expect(assigned.first()).toBeVisible(); await expect(own.first()).toBeVisible();
+  expect(await assigned.count()).toBeGreaterThan(1);
+  await expect(assigned.first()).toHaveAttribute("aria-label", /Assigned work/);
+  await expect(own.first()).toHaveAttribute("aria-label", /My customers/);
+  for (const name of ["Manage calendars", "Add customer property", "Copy iCal Link", "Download Calendar"]) await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
+  await assigned.first().click(); await expect(page.locator("#cleanDetailsText")).toContainText("Guests: 3"); await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByLabel("Calendar property").selectOption(propertyId); await expect(own).toHaveCount(0);
+  await page.getByLabel("Calendar property").selectOption(""); await expect(own.first()).toBeVisible();
+
+  if (info.project.name === "mobile") await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("button", { name: "My customers", exact: true }).click();
+  const customers = page.getByRole("dialog", { name: "My customers", exact: true });
+  await expect(customers.getByRole("heading", { name: "Test property", exact: true })).toBeVisible();
+  await expect(customers.getByText("Host property", { exact: true })).toHaveCount(0);
+  await customers.getByRole("button", { name: "Manage customer calendar" }).click();
+  const calendars = page.getByRole("dialog", { name: "Customer calendars", exact: true });
+  await expect(calendars.locator(".connected-calendar")).toHaveCount(1);
+  await calendars.getByRole("button", { name: "View details / Rename" }).click();
+  await calendars.getByLabel("Calendar/property name").fill("Renamed customer feed");
+  await calendars.getByRole("button", { name: "Save changes" }).click();
+  await expect(calendars.locator("#connectedCalendars")).toContainText("Renamed customer feed");
+  await calendars.getByRole("button", { name: "Close", exact: true }).click();
+  await customers.getByRole("button", { name: "Close", exact: true }).click();
+
+  await page.getByRole("button", { name: "Regular Clean List", exact: true }).click();
+  await page.getByLabel("Choose property").selectOption(propertyId);
+  await expect(page.getByText("Current property task", { exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await page.getByRole("button", { name: "Open cleaning job · 2026-09-24" }).click();
+  await expect(page.getByLabel("Assigned job")).toHaveValue(jobId);
+  await expect(page.getByText("Current property task", { exact: true })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Saved job task", exact: true }).check();
+  await expect(page.getByText("Progress saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("checkbox", { name: "Saved job task", exact: true })).toBeChecked();
+  expect(actions).toEqual(["customer-update", "job-check"]);
+  expect(errors).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

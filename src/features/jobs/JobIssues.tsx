@@ -5,9 +5,10 @@ import "./completion.css";
 import { categories } from "../../../lib/job-issues.cjs";
 type Issue = { id: string; category: keyof typeof categories; description: string; createdAt: string; hasPhoto: boolean };
 type Details = { id: string; revision: number; state: string; issues: Issue[] };
-export default function JobIssues({ jobId, host = false, onChanged }: { jobId: string; host?: boolean; onChanged: () => void }) {
+export default function JobIssues({ jobId, host = false, onChanged, onDirty }: { jobId: string; host?: boolean; onChanged: () => void; onDirty?: (dirty:boolean)=>void }) {
  const [data, setData] = useState<Details | null>(null), [status, setStatus] = useState("Loading issues…"), [busy, setBusy] = useState(false);
  const [category, setCategory] = useState("damage"), [description, setDescription] = useState(""), [photo, setPhoto] = useState<File | null>(null), [uploadKey, setUploadKey] = useState(0);
+ useEffect(()=>{onDirty?.(!!description.trim()||!!photo);},[description,photo,onDirty]);
  const locked = useRef(false), sequence = useRef(0), issueId = useRef("");
  const load = useCallback(async () => {
   const seq = ++sequence.current;

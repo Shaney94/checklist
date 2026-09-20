@@ -16,7 +16,7 @@ export const full = (d: string) =>
     dateStyle: "full",
     timeZone: "UTC",
   }).format(date(d));
-export function useCalendar(assignmentId?: string) {
+export function useCalendar(assignmentId?: string, allProperties = false) {
   const [month, setMonth] = useState(() => today().slice(0, 7) + "-01"),
     [selected, setSelected] = useState(""),
     [calendars, setCalendars] = useState<Calendar[]>([]),
@@ -55,7 +55,7 @@ export function useCalendar(assignmentId?: string) {
       setCalendars(data.calendars || []);
       setHasCalendar(assignmentId ? data.hasCalendar === true : !!data.calendars?.length);
       setZone(data.timeZone || "Europe/London");
-      if (data.calendars.length > 10 && !selected && !explicitAll.current) {
+      if (!allProperties && data.calendars.length > 10 && !selected && !explicitAll.current) {
         setSelected(data.calendars[0].id);
         return;
       }
@@ -118,7 +118,7 @@ export function useCalendar(assignmentId?: string) {
     } finally {
       if (seq === sequence.current) setBusy(false);
     }
-  }, [month, selected, assignmentId]);
+  }, [month, selected, assignmentId, allProperties]);
   useEffect(() => {
     void load();
     const visible = () => {
@@ -227,6 +227,7 @@ export function useCalendar(assignmentId?: string) {
     }
   }
   return {
+    setMonth,
     month,
     selected,
     calendars,

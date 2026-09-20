@@ -7,10 +7,12 @@ import Account from "../dashboard/Account";
 import Sidebar, { Icon } from "../dashboard/Sidebar";
 import { request, message } from "../dashboard/api";
 import type { User, Kind } from "../dashboard/types";
-import { labels } from "../dashboard/WorkspaceTools";
 import { today } from "../calendar/useCalendar";
 import WorkspaceCalendar from "../calendar/WorkspaceCalendar";
 import StartGuide from "../start-guide/StartGuide";
+import AssignmentCode from './AssignmentCode';
+import CleanerLists, { GeneralFAQs, type CleanerProperty } from './CleanerLists';
+import { propertyLabels } from '../../../lib/property-labels.cjs';
 import AssignedProperties from "./AssignedProperties";
 import MyCustomers from "./MyCustomers";
 import { useWorkspace } from "../dashboard/useWorkspace";
@@ -21,6 +23,9 @@ import { stateLabels } from "./types";
 import type { Job, AssignedJob } from "./types";
 export default function CleanerWorkspace({ user }: { user: User }) {
   const customerModel = useWorkspace();
+  const [customerDirty,setCustomerDirty]=useState(false),[issueDirty,setIssueDirty]=useState(false);
+  function closeCustomers(){if(!customerDirty||confirm("Discard unsaved property details?")){setCustomers(false);setCustomerDirty(false);}}
+  function closeIssues(){if(!issueDirty||confirm("Discard this unsaved issue?")){setIssueJobId("");setIssueDirty(false);}}
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [customerCalendarVersion, setCustomerCalendarVersion] = useState(0);
   function openCustomers(adding = false) { setAddingCustomer(adding); setCustomers(true); setMore(false); }
@@ -28,17 +33,22 @@ export default function CleanerWorkspace({ user }: { user: User }) {
   const [active, setActive] = useState<Kind | "jobs" | "calendar">("calendar"), [status, setStatus] = useState(""), [busy, setBusy] = useState(false);
   const [cant, setCant] = useState(false), [customers, setCustomers] = useState(false);
   const [completionId, setCompletionId] = useState(""), [issueJobId, setIssueJobId] = useState("");
-  const [code, setCode] = useState(""), [hasCode, setHasCode] = useState(false), [guide, setGuide] = useState(false);
+  const [guide, setGuide] = useState(false);
+  const [properties,setProperties]=useState<CleanerProperty[]>([]),[contextStatus,setContextStatus]=useState("");
+  const [guideProperty,setGuideProperty]=useState("");
+  const names:Record<string,string>=propertyLabels(properties);
+  const propertyName=(p:{propertyId:string;propertyName:string})=>names[p.propertyId]||p.propertyName;
   const [mobile, setMobile] = useState(false), [more, setMore] = useState(false), [target, setTarget] = useState<HTMLDivElement | null>(null);
   const load = useCallback(async () => {
     try {
       const result = await request<{ jobs: Job[]; hasCode: boolean }>("/api/cleaning-jobs");
       const date = today(), rank = (j: Job) => j.state !== "scheduled" ? 2 : j.date >= date ? 0 : 1;
       result.jobs.sort((a, b) => rank(a) - rank(b) || a.date.localeCompare(b.date) || (a.plannedAfter || "").localeCompare(b.plannedAfter || ""));
-      setJobs(result.jobs); setHasCode(result.hasCode); setSelected(id => result.jobs.some(j => j.id === id) ? id : result.jobs[0]?.id || ""); setStatus("");
+      setJobs(result.jobs); setSelected(id => result.jobs.some(j => j.id === id) ? id : result.jobs[0]?.id || ""); setStatus("");
     } catch (e) { setJobs([]); setSelected(""); setJob(null); setGuide(false); setStatus(message(e)); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  useEffect(()=>{let alive=true;const refresh=()=>{if(document.hidden){setProperties([]);return;}request<{properties:CleanerProperty[]}>('/api/cleaning-jobs?action=properties').then(r=>{if(alive){setProperties(r.properties||[]);setContextStatus('');}}).catch(e=>{if(alive){setProperties([]);setContextStatus(message(e));}});};refresh();window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);const timer=setInterval(refresh,60000);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};},[jobs,customerModel.state]);
   useEffect(() => {
     const pop = () => { const value = location.hash.replace(/^#(?:tools-)?/, ""); setActive(value === "regular" || value === "deep" ? value : value === "faq" || value === "faqs" ? "faqs" : value === "jobs" ? "jobs" : "calendar"); setMore(false); setGuide(false); };
     pop(); window.addEventListener("popstate", pop); return () => window.removeEventListener("popstate", pop);
@@ -57,17 +67,11 @@ export default function CleanerWorkspace({ user }: { user: User }) {
     return () => controller.abort();
   }, [selected, jobs]);
   useEffect(() => {
-    const refresh = () => { setJob(null); setGuide(false); setCode(""); if (!document.hidden) void load(); };
+    const refresh = () => { setJob(null); setGuide(false); if (!document.hidden) void load(); };
     window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
     const timer = setInterval(refresh, 60000);
     return () => { clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [load]);
-  async function generate() {
-    if (hasCode && !confirm("Replace your previous assignment code? Existing job assignments stay in place.")) return;
-    setBusy(true);
-    try { setCode((await request<{ code: string }>("/api/cleaning-jobs", { action: "code" })).code); setHasCode(true); setStatus(""); }
-    catch (e) { setStatus(message(e)); } finally { setBusy(false); }
-  }
   async function check(index: number, checked: boolean) {
     if (!job || busy || job.state !== "scheduled") return; setBusy(true);
     setJob({ ...job, checked: checked ? [...new Set([...job.checked, index])] : job.checked.filter(i => i !== index) });
@@ -83,35 +87,24 @@ export default function CleanerWorkspace({ user }: { user: User }) {
       <Sidebar active={active} navigate={navigate} mobile={mobile} toolsTarget={target} onGuide={() => { setMore(false); setGuide(true); }} onCustomers={() => openCustomers()} />
       <main className="workspace-main">
       <Reminder content={null} visible={active === "jobs" || active === "calendar"} jobs />
-      {active === "calendar" && nextJob && <section className="section job-workspace" aria-label="Next clean"><h2>Next clean</h2><p><strong>{nextJob.propertyName}</strong> · <time dateTime={nextJob.date}>{nextJob.date}</time>{nextJob.plannedAfter ? " · Planned after " + nextJob.plannedAfter.slice(0, 5) : ""}</p>{nextJob.automatic && <p>Planned after scheduled checkout. Confirm the property is ready before entering.</p>}<button className="primary" onClick={() => { setSelected(nextJob.id); navigate(nextJob.kind); }}>Open next clean</button></section>}
-      {active === "calendar" && customerModel.state.data.properties.length > 0 && <section className="section customer-summary" aria-label="My customers"><div><h2>My customers</h2><p>{customerModel.ready ? customerModel.state.data.properties.length ? `${customerModel.state.data.properties.length} customer propert${customerModel.state.data.properties.length === 1 ? "y" : "ies"} you manage yourself.` : "Manage calendars and lists for your own cleaning customers." : "Loading your customer properties…"}</p></div><button className="back" onClick={() => openCustomers(!customerModel.state.data.properties.length)}>{customerModel.state.data.properties.length ? "Open My customers" : "Add customer property"}</button></section>}
+      {active === "calendar" && nextJob && <section className="section job-workspace" aria-label="Next clean"><h2>Next clean</h2><p><strong>{propertyName(nextJob)}</strong> · <time dateTime={nextJob.date}>{nextJob.date}</time>{nextJob.plannedAfter ? " · Planned after " + nextJob.plannedAfter.slice(0, 5) : ""}</p>{nextJob.automatic && <p>Planned after scheduled checkout. Confirm the property is ready before entering.</p>}<button className="primary" onClick={() => { setSelected(nextJob.id); navigate("jobs"); }}>Open next clean</button></section>}
       {active === "calendar" && status && <p role="status">{status}</p>}
-      <AssignedProperties userId={user.id} calendarVisible={active === "calendar"} onChanged={() => void load()} ownCalendar={<WorkspaceCalendar key={customerCalendarVersion} onAddCustomer={() => openCustomers(true)} />} />
-      {active !== "calendar" && <>
+      <AssignedProperties names={names} userId={user.id} calendarVisible={active === "calendar"} onChanged={() => {void load();setCustomerCalendarVersion(v=>v+1);}} ownCalendar={hidden=><WorkspaceCalendar key={customerCalendarVersion} customerView names={names} hiddenProperties={hidden} />} />
+      {active === "faqs" && <GeneralFAQs />}
+      {(active === 'regular'||active === 'deep')&&<CleanerLists key={active} kind={active} properties={properties} names={names} jobs={jobs} status={contextStatus} onJob={id=>{setSelected(id);navigate('jobs');}} />}
+      {active === "jobs" && <>
       <section className="section job-workspace">
-        <h2>{active === "jobs" ? "Your cleaning jobs" : labels[active]}</h2>
+        <h2>Your cleaning jobs</h2>
         <p role="status">{status}</p>
-        <label className="field">Assigned job<select disabled={busy} value={selected} onChange={e => setSelected(e.target.value)}><option value="">Choose a job</option>{jobs.map(j => <option value={j.id} key={j.id}>{j.date} · {j.propertyName} · {j.kind} clean · {stateLabels[j.state]}</option>)}</select></label>
+        <AssignmentCode />
+        <label className="field">Assigned job<select disabled={busy} value={selected} onChange={e => setSelected(e.target.value)}><option value="">Choose a job</option>{jobs.map(j => <option value={j.id} key={j.id}>{j.date} · {propertyName(j)} · {j.kind} clean · {stateLabels[j.state]}</option>)}</select></label>
         {status && !job && <button className="back" disabled={busy} onClick={() => void load()}>Try again</button>}
-        {active === "jobs" ? <>
-          {!jobs.length && <p>No assigned jobs yet. Accept your Host’s property invitation. Planned cleans appear when its reservation calendar is linked; your Host can also schedule other work.</p>}
-          {job && <section><h3>{job.propertyName}</h3><p><time dateTime={job.date}>{job.date}</time> · {job.kind === "deep" ? "Deep" : "Regular"} clean</p><button className="primary" onClick={() => navigate(job.kind)}>Open clean list</button> <button className="back" disabled={job.state !== "scheduled"} onClick={() => setGuide(true)}>Open Start Guide</button></section>}
-          <details><summary>Private assignment code</summary><p>Share this code only with Hosts you want to receive work from. It identifies your account for assignment; it cannot sign anyone in or open a property. A new code replaces the old code without changing existing assignments.</p>
-            <button className="back" disabled={busy} onClick={() => void generate()}>{hasCode ? "Generate replacement code" : "Generate assignment code"}</button>
-            {code && <label className="field">Your assignment code<input readOnly value={code} onFocus={e => e.target.select()} /><span>Copy it now. It is not stored in this browser and cannot be shown again after leaving.</span></label>}
-          </details>
-          <p className="calendar-help">Use My customers for your own customer properties and calendars. Assigned work stays separate.</p>
-        </> : !job ? <p>Choose an assigned job to see its cleaning tasks and guidance.</p> : active === "faqs" ? <>
-          {job.faqs.map((f, i) => <details key={i}><summary>{f.question}</summary><p>{f.answer}</p></details>)}{!job.faqs.length && <p>No FAQs have been added.</p>}
-        </> : job.kind !== active ? <p>This job is a {job.kind} clean. Choose a job of the selected clean type.</p> : <div id="workspaceContentView">
-          <p>{job.checked.length} of {job.tasks.length} tasks checked</p>
-          {job.tasks.map((task, index) => <label key={index}><input type="checkbox" disabled={busy || job.state !== "scheduled"} checked={job.checked.includes(index)} onChange={e => void check(index, e.target.checked)} /><span>{task}</span></label>)}
-          {!job.tasks.length && <p>This job has no cleaning tasks. Ask your Host to configure the property list and replace this empty job.</p>}
-        </div>}
-        {job && active !== "faqs" && <div className="dialog-actions">
+        {!jobs.length && <p>No assigned jobs yet. Accept your Host’s property invitation in Calendar. My customers manages properties you bring yourself; standard cleaning lists and FAQs are already available.</p>}
+        {job && <><h3>{propertyName(job)}</h3><p>{job.date} · {job.kind === 'deep'?'Deep':'Regular'} clean · {job.checked.length} of {job.tasks.length} tasks checked</p><div id="workspaceContentView">{job.tasks.map((task,index)=><label key={index}><input type="checkbox" disabled={busy||job.state!=='scheduled'} checked={job.checked.includes(index)} onChange={e=>void check(index,e.target.checked)} /><span>{task}</span></label>)}</div></>}
+        {job && <div className="dialog-actions">
           <p>{stateLabels[job.state]} · {job.automatic ? "Reservation turnover" : "Manual clean"}{job.plannedAfter ? " · Planned after " + job.plannedAfter.slice(0, 5) : ""}</p>
           {job.needsAttention && <p role="status">The reservation changed after work started. Confirm the plan with your Host; your saved work is retained.</p>}
-          {job.state === "scheduled" && active !== "jobs" && <button className="back" onClick={() => setGuide(true)}>Open Start Guide</button>}
+          {job.state === "scheduled" && <button className="back" onClick={() => {setGuideProperty(job.propertyId);setGuide(true);}}>Open Start Guide</button>}
           <button className="back" onClick={() => setIssueJobId(job.id)}>{job.state === "scheduled" ? "Report an issue" : "View reported issues"}</button>
           {job.state === "scheduled" && <button className="back" onClick={() => setCant(true)}>Can’t make this clean</button>}
           <button className="primary" disabled={busy || (job.state === "scheduled" && (!job.tasks.length || job.checked.length !== job.tasks.length))} onClick={() => setCompletionId(job.id)}>{job.state === "scheduled" ? "Complete clean" : "View completion"}</button>
@@ -120,15 +113,19 @@ export default function CleanerWorkspace({ user }: { user: User }) {
       </>}
       </main>
     </div>
-    <Dialog id="customerProperties" title="My customers" open={customers} onClose={() => setCustomers(false)}>{customers && <MyCustomers model={customerModel} initiallyAdding={addingCustomer} onCalendarsChanged={() => setCustomerCalendarVersion(v => v + 1)} />}<button className="back" onClick={() => setCustomers(false)}>Close</button></Dialog>
-    <Dialog id="mobileToolsDialog" title="Workspace tools" open={more} onClose={() => setMore(false)}><button className="back" onClick={() => setMore(false)}>Close</button><div ref={setTarget} /></Dialog>
-    <Dialog id="cantMakeDialog" title="Can’t make this clean?" open={cant} onClose={() => setCant(false)}>
+    <Dialog showClose id="customerProperties" title="My customers" open={customers} onClose={closeCustomers}>{customers && <MyCustomers onDirty={setCustomerDirty} names={names} model={customerModel} initiallyAdding={addingCustomer} onCalendarsChanged={() => setCustomerCalendarVersion(v => v + 1)} />}</Dialog>
+    <Dialog showClose id="mobileToolsDialog" title="Workspace tools" open={more} onClose={() => setMore(false)}><div ref={setTarget} /></Dialog>
+    <Dialog showClose id="cantMakeDialog" title="Can’t make this clean?" open={cant} onClose={() => setCant(false)}>
       <p>Please let your host know as soon as possible so they can arrange another cleaner. This does not cancel the job.</p>
       <p>Your assignment remains in place. Arrange alternative cover with your Host using your existing arrangements.</p>
-      <button className="back" onClick={() => setCant(false)}>Close</button>
+
     </Dialog>
-    <Dialog id="jobIssuesDialog" title="Clean issues" open={!!issueJobId} onClose={() => setIssueJobId("")}>{issueJobId && <JobIssues key={issueJobId} jobId={issueJobId} onChanged={() => void load()} />}<button className="back" onClick={() => setIssueJobId("")}>Close</button></Dialog>
-    <Dialog id="completionDialog" title="Clean completion" open={!!completionId} onClose={() => setCompletionId("")}>{completionId && <Completion key={completionId} jobId={completionId} onChanged={() => void load()} />}<button className="back" onClick={() => setCompletionId("")}>Close</button></Dialog>
-    <Dialog id="startGuideDialog" title="Property Start Guide" open={guide} onClose={() => setGuide(false)}>{guide && (job ? <><h3>{job.propertyName}</h3><StartGuide key={job.id} propertyId={job.propertyId} jobId={job.id} /></> : <p>Choose an assigned clean, or open a property’s Start Guide from Assigned work in Calendar.</p>)}<button className="back" onClick={() => setGuide(false)}>Close</button></Dialog>
+    <Dialog showClose id="jobIssuesDialog" title="Clean issues" open={!!issueJobId} onClose={closeIssues}>{issueJobId && <JobIssues onDirty={setIssueDirty} key={issueJobId} jobId={issueJobId} onChanged={() => void load()} />}</Dialog>
+    <Dialog showClose id="completionDialog" title="Clean completion" open={!!completionId} onClose={() => setCompletionId("")}>{completionId && <Completion key={completionId} jobId={completionId} onChanged={() => void load()} />}</Dialog>
+    <Dialog showClose id="startGuideDialog" title="Property Start Guide" open={guide} onClose={() => setGuide(false)}>{guide && <>
+      <label className="field">Choose property<select value={guideProperty} onChange={e=>setGuideProperty(e.target.value)}><option value="">Choose a property</option>{properties.filter(p=>p.source==='assigned').map(p=><option key={p.id} value={p.id}>{names[p.id]||p.name}</option>)}</select></label>
+      {properties.filter(p=>p.id===guideProperty&&p.source==='assigned').map(p=><StartGuide key={p.id} propertyId={p.id} assignmentId={p.assignmentId} jobId={p.assignmentId?undefined:p.jobId} />)}
+      {!guideProperty&&<p>Choose an assigned property to read its private operational guidance.</p>}
+      </>}</Dialog>
   </div>;
 }
