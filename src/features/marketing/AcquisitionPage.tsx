@@ -6,17 +6,15 @@ import { ORIGIN, publicPages } from './metadata';
 import './public.css';
 import './acquisition.css';
 
-export default function AcquisitionPage({ page, children }: { page: typeof publicPages[number]; children: ReactNode }) {
+export default function AcquisitionPage({ page, parent, children }: { page: typeof publicPages[number]; parent?: typeof publicPages[number]; children: ReactNode }) {
+  const breadcrumbs = [publicPages[0], ...(parent ? [parent] : []), page];
   return <div className="public-site acquisition-page">
     <Motion /><PublicHeader />
     <main id="main" tabIndex={-1}>
-      <nav className="public-container breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li aria-current="page">{page.name}</li></ol></nav>
+      <nav className="public-container breadcrumbs" aria-label="Breadcrumb"><ol>{breadcrumbs.map((item, index) => <li key={item.path} aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined}>{index === breadcrumbs.length - 1 ? item.name : <a href={item.path}>{item.name}</a>}</li>)}</ol></nav>
       {children}
     </main>
     <PublicFooter />
-    <StructuredData data={{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${ORIGIN}/` },
-      { '@type': 'ListItem', position: 2, name: page.name, item: new URL(page.path, ORIGIN).href },
-    ] }} />
+    <StructuredData data={{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: breadcrumbs.map((item, index) => ({ '@type': 'ListItem', position: index + 1, name: item.name, item: new URL(item.path, ORIGIN).href })) }} />
   </div>;
 }

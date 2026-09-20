@@ -7,6 +7,7 @@ export const publicPages = [
   { path: '/airbnb-cleaning', name: 'Airbnb cleaning', title: 'Airbnb cleaning for UK Hosts | Turnli', description: 'Looking for an Airbnb cleaner? Explore Turnli’s growing UK network, or bring your own Cleaner and organise holiday let turnovers, checklists and Host review.' },
   { path: '/software/airbnb-cleaning', name: 'Airbnb cleaning software', title: 'Airbnb cleaning management software | Turnli', description: 'Already have a Cleaner? Manage reservation calendars, planned turnovers, property checklists, issues and completion photos in one Turnli workspace.' },
   { path: '/cleaners/airbnb-cleaning-jobs/', name: 'Airbnb cleaning jobs', title: 'Airbnb cleaning jobs & your Cleaner workspace | Turnli', description: 'Join Turnli free to manage existing Airbnb customers, calendars and cleans. Be part of a growing platform for holiday let cleaning work in the UK.' },
+  { path: '/airbnb-cleaning/glasgow', name: 'Glasgow', title: 'Airbnb cleaning Glasgow | Turnli', description: 'Plan Glasgow Airbnb turnovers with detailed checklists, completion photos and Host review. Explore Regular and Deep reference prices or bring your own Cleaner.' },
 ] as const;
 
 export { ORIGIN };

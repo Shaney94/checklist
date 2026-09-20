@@ -4,6 +4,7 @@ import { login } from '../fixtures/dashboard';
 
 const origin = 'https://turnli.io';
 const routes = ['/', '/airbnb-cleaning', '/software/airbnb-cleaning', '/cleaners/airbnb-cleaning-jobs/'];
+const sitemapRoutes = [...routes, '/airbnb-cleaning/glasgow'];
 
 test('public SEO is server rendered, canonical, crawlable and describes only real entities', { tag: '@critical' }, async ({ browser, request }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
@@ -70,11 +71,11 @@ test('sitemap is parseable sitemap XML with exactly the canonical public URLs', 
   const namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
   const expected = {
     errors: 0, root: 'urlset', namespace,
-    entries: routes.map(route => ({ name: 'url', namespace, fields: [{ name: 'loc', namespace, value: origin + route }] })),
+    entries: sitemapRoutes.map(route => ({ name: 'url', namespace, fields: [{ name: 'loc', namespace, value: origin + route }] })),
   };
   // These contain every URL but are not valid sitemap XML.
-  expect(await parse(routes.map(route => origin + route).join('\n'))).not.toEqual(expected);
-  expect(await parse(`<urlset xmlns="${namespace}">${routes.map(route => `<url><loc>${origin + route}</loc></url>`).join('')}`)).not.toEqual(expected);
+  expect(await parse(sitemapRoutes.map(route => origin + route).join('\n'))).not.toEqual(expected);
+  expect(await parse(`<urlset xmlns="${namespace}">${sitemapRoutes.map(route => `<url><loc>${origin + route}</loc></url>`).join('')}`)).not.toEqual(expected);
   const sitemap = await request.get('/sitemap.xml', { maxRedirects: 0 });
   expect(sitemap.status()).toBe(200);
   expect(sitemap.headers()['content-type']).toMatch(/^(?:application|text)\/xml(?:;|$)/i);
