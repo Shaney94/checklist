@@ -1,6 +1,6 @@
 # Public SEO
 
-The homepage and three acquisition pages use App Router metadata and server-rendered HTML. The canonical origin comes from the existing server-owned authentication configuration (`https://turnli.io`), never a request host. Existing Next.js URL normalisation redirects trailing slashes to the slashless canonical paths (except `/`). Links, Open Graph URLs and the sitemap use those same URLs.
+The homepage and three acquisition pages use App Router metadata and server-rendered HTML. The canonical origin comes from the existing server-owned authentication configuration (`https://turnli.io`), never a request host. The Cleaner acquisition URL retains its trailing slash: `/cleaners/airbnb-cleaning-jobs/`. Other routes retain existing slashless normalisation (except `/`). Links, Open Graph URLs and the sitemap use those same URLs.
 
 `src/features/marketing/metadata.ts` lists the four public pages. Extend it only for useful, approved content; a future location page should have visible parent breadcrumbs under Airbnb cleaning. No location pages, matching or availability claims have been added. Host onboarding still requires the existing explicit server-managed Host role; registration does not self-assign that role. The Cleaner route uses the existing free registration/workspace flow. No enquiry collection or new marketplace flow is implied by Get started.
 
@@ -23,7 +23,7 @@ After deployment:
 1. In Google Search Console, add the **Domain property `turnli.io`**.
 2. Copy Google's exact DNS TXT verification record into the domain's DNS provider, wait for propagation, then select Verify. No token is fabricated or stored in the application.
 3. Submit `https://turnli.io/sitemap.xml` in Sitemaps.
-4. Use URL Inspection → Test live URL for `/`, `/airbnb-cleaning`, `/software/airbnb-cleaning` and `/cleaners/airbnb-cleaning-jobs`. Confirm crawl access and canonicals before requesting indexing.
+4. Use URL Inspection → Test live URL for `/`, `/airbnb-cleaning`, `/software/airbnb-cleaning` and `/cleaners/airbnb-cleaning-jobs/`. Confirm crawl access and canonicals before requesting indexing.
 5. Monitor indexing, query performance and field Core Web Vitals after sufficient real traffic. Availability, rankings and Google-selected canonicals are not guaranteed by deployment.
 
 References: [Google ownership verification](https://support.google.com/webmasters/answer/9008080), [sitemap submission](https://support.google.com/webmasters/answer/7451001), [Next.js nonce rendering](https://nextjs.org/docs/app/guides/content-security-policy#static-vs-dynamic-rendering-with-csp).

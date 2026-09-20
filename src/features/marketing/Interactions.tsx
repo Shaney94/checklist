@@ -24,7 +24,7 @@ export function MobileNavigation() {
   }}>
     <summary>Menu <span aria-hidden="true">☰</span></summary>
     <nav aria-label="Mobile navigation" onClick={event => { if ((event.target as HTMLElement).closest('a') && details.current) details.current.open = false; }}>
-      <a href="/#how-it-works">How it works</a><a href="/#operations">The details</a><a href="/#for-you">Who it’s for</a><a href="/airbnb-cleaning">Airbnb cleaning</a><a href="/software/airbnb-cleaning">Cleaning software</a><a href="/cleaners/airbnb-cleaning-jobs">Cleaner opportunities</a><a href="/login">Log in</a><a href="/register">Get started →</a>
+      <a href="/#how-it-works">How it works</a><a href="/#operations">The details</a><a href="/#for-you">Who it’s for</a><a href="/airbnb-cleaning">Airbnb cleaning</a><a href="/software/airbnb-cleaning">Cleaning software</a><a href="/cleaners/airbnb-cleaning-jobs/">Cleaner opportunities</a><a href="/login">Log in</a><a href="/register">Get started →</a>
     </nav>
   </details>;
 }

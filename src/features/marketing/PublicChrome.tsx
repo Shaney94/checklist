@@ -11,6 +11,6 @@ export function PublicHeader() {
 
 export function PublicFooter() {
   return <footer className="public-container public-footer"><div><Brand /><p>Cleaning without the managing.</p></div>
-    <nav aria-label="Footer navigation"><a href="/airbnb-cleaning">Airbnb cleaning</a><a href="/software/airbnb-cleaning">Cleaning software</a><a href="/cleaners/airbnb-cleaning-jobs">Cleaner opportunities</a><a href="/login">Log in</a><a href="/register">Get started</a></nav>
+    <nav aria-label="Footer navigation"><a href="/airbnb-cleaning">Airbnb cleaning</a><a href="/software/airbnb-cleaning">Cleaning software</a><a href="/cleaners/airbnb-cleaning-jobs/">Cleaner opportunities</a><a href="/login">Log in</a><a href="/register">Get started</a></nav>
     <small>© {new Date().getFullYear()} Turnli</small></footer>;
 }

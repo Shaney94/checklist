@@ -1,8 +1,14 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
+  // This public URL keeps its trailing slash; preserve Next's normal behaviour elsewhere.
+  skipTrailingSlashRedirect: true,
   async redirects() {
-    return [{ source: '/index.html', destination: '/', permanent: true }];
+    return [
+      { source: '/:path(cleaners/airbnb-cleaning-jobs$)', destination: '/cleaners/airbnb-cleaning-jobs/', permanent: true },
+      { source: '/:path((?!cleaners/airbnb-cleaning-jobs/$).+)/', destination: '/:path', permanent: true },
+      { source: '/index.html', destination: '/', permanent: true },
+    ];
   },
   serverExternalPackages: ['@descope/node-sdk', '@neondatabase/serverless'],
   outputFileTracingIncludes: {

@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { login } from '../fixtures/dashboard';
 
 const origin = 'https://turnli.io';
-const routes = ['/', '/airbnb-cleaning', '/software/airbnb-cleaning', '/cleaners/airbnb-cleaning-jobs'];
+const routes = ['/', '/airbnb-cleaning', '/software/airbnb-cleaning', '/cleaners/airbnb-cleaning-jobs/'];
 
 test('public SEO is server rendered, canonical, crawlable and describes only real entities', { tag: '@critical' }, async ({ browser, request }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
@@ -42,7 +42,8 @@ test('public SEO is server rendered, canonical, crawlable and describes only rea
       await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(ld.itemListElement[1].name);
     }
     if (route !== '/') {
-      const redirect = await request.get(route + '/', { maxRedirects: 0 });
+      const variant = route.endsWith('/') ? route.slice(0, -1) : route + '/';
+      const redirect = await request.get(variant, { maxRedirects: 0 });
       expect(redirect.status()).toBe(308); expect(redirect.headers().location).toBe(route);
     }
   }
@@ -110,4 +111,24 @@ test('cornerstones support accessible navigation, mobile reflow, reduced motion 
     await expect(page).toHaveURL(/\/register$/); await expect(page.getByLabel('Confirm password')).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test('Cleaner acquisition canonical resolves directly and other route normalisation is unchanged', { tag: '@critical' }, async ({ request }) => {
+  const path = '/cleaners/airbnb-cleaning-jobs/';
+  const response = await request.get(path, { maxRedirects: 0 });
+  expect(response.status()).toBe(200);
+  expect(response.headers()['x-robots-tag'] || '').not.toContain('noindex');
+  expect(response.headers()['content-security-policy']).toContain("'nonce-");
+  const html = await response.text();
+  expect(html).toContain('Find Airbnb cleaning jobs');
+  expect(html).toContain(`rel="canonical" href="${origin}${path}"`);
+  expect(html).toContain('name="robots" content="index, follow"');
+  const variant = await request.get(path.slice(0, -1) + '?utm_source=synthetic', { maxRedirects: 0 });
+  expect(variant.status()).toBe(308);
+  expect(variant.headers().location).toBe(path + '?utm_source=synthetic');
+  for (const route of ['/airbnb-cleaning', '/software/airbnb-cleaning', '/login', '/register', '/app', '/app/host', '/api/account']) {
+    const other = await request.get(route + '/?test=1', { maxRedirects: 0 });
+    expect(other.status()).toBe(308);
+    expect(other.headers().location).toBe(route + '?test=1');
+  }
 });

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { ORIGIN } from '../../../lib/account.cjs';
 
-// Match Next's existing trailing-slash redirects. No request-derived hosts.
+// Match canonical routing, including the Cleaner page's trailing slash. No request-derived hosts.
 export const publicPages = [
   { path: '/', name: 'Home', title: 'Turnli — Airbnb cleaning, without the managing', description: 'Bring reservation calendars, Cleaners, detailed checklists and completion photos together. A clearer cleaning workflow for Hosts and Cleaners.' },
   { path: '/airbnb-cleaning', name: 'Airbnb cleaning', title: 'Airbnb cleaning for UK Hosts | Turnli', description: 'Looking for an Airbnb cleaner? Explore Turnli’s growing UK network, or bring your own Cleaner and organise holiday let turnovers, checklists and Host review.' },
   { path: '/software/airbnb-cleaning', name: 'Airbnb cleaning software', title: 'Airbnb cleaning management software | Turnli', description: 'Already have a Cleaner? Manage reservation calendars, planned turnovers, property checklists, issues and completion photos in one Turnli workspace.' },
-  { path: '/cleaners/airbnb-cleaning-jobs', name: 'Airbnb cleaning jobs', title: 'Airbnb cleaning jobs & your Cleaner workspace | Turnli', description: 'Join Turnli free to manage existing Airbnb customers, calendars and cleans. Be part of a growing platform for holiday let cleaning work in the UK.' },
+  { path: '/cleaners/airbnb-cleaning-jobs/', name: 'Airbnb cleaning jobs', title: 'Airbnb cleaning jobs & your Cleaner workspace | Turnli', description: 'Join Turnli free to manage existing Airbnb customers, calendars and cleans. Be part of a growing platform for holiday let cleaning work in the UK.' },
 ] as const;
 
 export { ORIGIN };
