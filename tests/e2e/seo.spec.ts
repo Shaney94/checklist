@@ -4,7 +4,7 @@ import { login } from '../fixtures/dashboard';
 
 const origin = 'https://turnli.io';
 const routes = ['/', '/airbnb-cleaning', '/software/airbnb-cleaning', '/cleaners/airbnb-cleaning-jobs/'];
-const sitemapRoutes = [...routes, '/airbnb-cleaning/glasgow'];
+const sitemapRoutes = [...routes, '/airbnb-cleaning/glasgow', '/airbnb-cleaning/edinburgh', '/airbnb-cleaning/london'];
 
 test('public SEO is server rendered, canonical, crawlable and describes only real entities', { tag: '@critical' }, async ({ browser, request }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });

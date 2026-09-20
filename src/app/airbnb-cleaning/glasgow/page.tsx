@@ -1,6 +1,6 @@
 import AcquisitionPage from '../../../features/marketing/AcquisitionPage';
 import { publicMetadata, publicPages } from '../../../features/marketing/metadata';
-import './glasgow.css';
+import '../../../features/marketing/local.css';
 
 export const metadata = publicMetadata(publicPages[4]);
 export default function Page() {

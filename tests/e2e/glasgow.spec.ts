@@ -31,7 +31,7 @@ test('Glasgow is a public server-rendered local page with canonical metadata and
   expect(await page.locator('script[type="application/ld+json"]').evaluate(el => (el as HTMLScriptElement).nonce)).toBe(response?.headers()['content-security-policy'].match(/'nonce-([^']+)'/)?.[1]);
   const redirect = await request.get(path + '/', { maxRedirects: 0 });
   expect(redirect.status()).toBe(308); expect(redirect.headers().location).toBe(path);
-  for (const city of ['edinburgh', 'london']) expect((await request.get(`/airbnb-cleaning/${city}`)).status()).toBe(404);
+  for (const city of ['manchester', 'london/camden']) expect((await request.get(`/airbnb-cleaning/${city}`)).status()).toBe(404);
   await context.close();
 });
 
