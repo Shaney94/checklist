@@ -44,10 +44,11 @@ export default function Account({ user }: { user: User }) {
       setBusy(false);
     }
   }
+  const cleaner = user.role === "cleaner";
   return (
     <>
       <div className="header-account">
-        {user.canInvite && (
+        {user.canInvite && !cleaner && (
           <button
             className="back invite-customers"
             onClick={() => open("invite")}
@@ -98,6 +99,11 @@ export default function Account({ user }: { user: User }) {
               Send invite
             </button>
           </form>
+        ) : cleaner && mode === "account" ? (
+          <div className="cleaner-account-settings">
+            <section aria-labelledby="account-identity"><h3 id="account-identity">Your profile</h3><dl><dt>Login email</dt><dd>{user.email}</dd><dt>Account</dt><dd>Cleaner</dd></dl></section>
+            <section aria-labelledby="account-security"><h3 id="account-security">Password & security</h3><p>Use an email verification code to securely set or change your password.</p><a className="back" href="/login?reset=1&next=%2Fapp">Set or change password</a></section>
+          </div>
         ) : (
           <div id="accountSuccess">
             <p>

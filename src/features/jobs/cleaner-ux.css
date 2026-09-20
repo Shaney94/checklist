@@ -1,0 +1,32 @@
+.cleaner-workspace .workspace-main>.section{margin-bottom:14px}
+.cleaner-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-left:auto;flex-shrink:0}
+.cleaner-header-actions .header-account{margin:0;flex:none}
+.cleaner-workspace .customer-summary{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.customer-summary h2{margin:0 0 6px;font-size:18px}
+.customer-summary p{margin:0;font-size:14px;line-height:1.5}
+.customer-summary .back{flex-shrink:0}
+.cleaner-workspace .back,.my-customers .back,.cleaner-account-settings .back{min-height:44px}
+.cleaner-workspace .dialog-actions svg{width:18px;height:18px}
+#customerProperties{width:min(820px,calc(100% - 24px))}
+.my-customers .field input{width:100%;min-width:0}
+.my-customers .customer-choices{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+.customer-choices .back{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.customer-choices [aria-pressed=true]{background:#e0f1e6;border-color:#6a9c80;color:#123c30}
+.my-customers h3,.job-workspace strong{overflow-wrap:anywhere}
+.my-customers h4{margin-bottom:8px}
+.my-customers details{margin-block:12px}
+.my-customers summary{min-height:44px;padding-block:10px;cursor:pointer}
+.my-customers form{margin-block:15px}
+.cleaner-account-settings section+section{border-top:1px solid var(--border);margin-top:24px;padding-top:12px}
+.cleaner-account-settings dt{font-size:13px;color:var(--muted);margin-top:14px}
+.cleaner-account-settings dd{margin:5px 0;overflow-wrap:anywhere;font-weight:600}
+.cleaner-account-settings a.back{display:inline-flex;align-items:center;text-decoration:none}
+.cleaner-account-settings p{line-height:1.6}
+@media(max-width:700px){.cleaner-workspace .customer-summary{padding:14px;display:block}.customer-summary .back{margin-top:12px}.cleaner-header-actions{gap:5px}.cleaner-workspace .brand-header .header-account{flex:none}.my-customers .dialog-actions{flex-wrap:wrap}}
+.assigned-work h2{margin:0 0 8px;font-size:20px}
+.assigned-work>p{font-size:13px;line-height:1.5;margin:8px 0}
+.assigned-work>p:empty{display:none}
+.assigned-work .assigned-property-name{font-size:17px;margin:16px 0 10px}
+.assigned-property-actions{display:flex;gap:8px;flex-wrap:wrap}
+.assigned-work .dialog-actions{margin-top:14px}
+.cleaner-account-settings a.back{color:var(--accent2)}

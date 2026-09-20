@@ -18,7 +18,7 @@ Any checked task, completion photo or reported issue counts as started work. Res
 
 The `REGULAR` and `DEEP` task arrays in `b7f9e98:index.html` exactly match `3023f80:index.html` and `3e78f80:index.html`: 38 Regular tasks in six groups and 109 Deep tasks in eleven groups. Only those task arrays were recovered. Separate access notes were not copied. Six task strings were minimally adapted: direct-text reporting became in-app reporting, two laundry-bag location instructions and three equipment-location descriptions were removed from reusable tasks. Other established task content is retained, with group names prefixed to each task using the existing flat checklist representation.
 
-New properties automatically receive the 38-task Regular and 109-task Deep standards. Adopted standards are recognised by their saved task definitions, independently of applicability, and no longer show an adoption action. Existing property lists and checked progress are not overwritten. Hosts can explicitly choose **Use standard template**, which replaces that property's selected list and maps applicability/ticks by matching task text (unmatched exclusions block adoption for review); existing job snapshots and job progress remain unchanged. Marking equipment-specific tasks not applicable excludes them from future persisted job instances. Even unstarted existing jobs keep their creation-time snapshot. Properties with no applicable tasks need Host setup before new completable jobs can be created; empty job snapshots cannot be submitted as completed.
+New properties automatically receive the 38-task Regular and 109-task Deep standards. Adopted standards are recognised by their saved task definitions, independently of applicability, and no longer show an adoption action. Existing property lists and checked progress are not overwritten. Hosts can explicitly choose **Use standard template**, which replaces that property's selected list and maps applicability/ticks by matching task text (unmatched exclusions block adoption for review); started job snapshots and job progress remain unchanged; untouched scheduled jobs refresh atomically. Marking equipment-specific tasks not applicable excludes them from future persisted job instances. Untouched scheduled jobs can now refresh to the current applicable list; started or uncertain snapshots are protected. Properties with no applicable tasks need Host setup before new completable jobs can be created; empty job snapshots cannot be submitted as completed.
 
 ## Cleaner-reported issues
 
@@ -38,10 +38,21 @@ Apply after migrations 001–008 using the established environment/database work
 
 ```sh
 node --env-file=.env.local scripts/migrate-turnovers-issues.cjs
-TURNLI_TEST_DATABASE=1 node --env-file=.env.local --test tests/turnovers-issues.integration.test.cjs
+npm run test:integration -- tests/turnovers-issues.integration.test.cjs
 node --test tests/checklist-recovery.test.cjs tests/job-issues.test.cjs
 ```
 
 The migration reconciles eligible existing calendars/assignments once. Integration tests use temporary synthetic records and remove them in `finally`. Browser fixtures never send invitations or external notifications.
 
 Migration 010 (`node --env-file=.env.local scripts/migrate-turnover-reservation-state.cjs`) adds private hashed pending-removal IDs to each calendar and corrects reconciliation to distinguish missing assignments from missing reservations. It does not backfill or blindly reactivate existing cancelled jobs. Normal reconciliation considers only automatically cancelled jobs whose reservations are present, excluding unconfirmed retained reservations. Explicit Host cancellations and completed history stay unchanged. A second persistently incomplete source response cannot be distinguished from genuine removal in a snapshot-only iCal protocol; the two-successful-refresh rule is the confirmation policy.
+
+## Safe planned-checklist reconciliation
+
+Migration 011 adds sticky checklist protection and `turnli_reconcile_job_checklists(workspace, property)`. Property task/adoption/applicability saves use it automatically. It locks the existing workspace and scheduled job rows, applies that property’s current applicable Regular/Deep tasks and changes only tasks, revision and update time when the snapshot differs. It creates no jobs and changes no reservation, assignment or completion state. Stale checklist writes fail the existing revision check.
+
+Any progress, draft photo, issue, submission/review metadata, terminal state or reservation-attention flag excludes a job. Protection survives unchecking tasks or removing photos. Legacy revision gaps are treated as uncertain work and protected. The sole recognised administrative gap is the extra revision in the existing atomic revocation/cancellation operation, corroborated by its cancellation event and matching assignment-revocation timestamp. No checklist snapshots are bulk-refreshed by migration; existing eligible properties may be reconciled explicitly. Repeated reconciliation is a no-op.
+
+```sh
+node --env-file=.env.local scripts/migrate-planned-job-checklists.cjs
+npm run test:integration -- tests/planned-checklists.integration.test.cjs
+```

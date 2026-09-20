@@ -1,10 +1,11 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 // Opt-in: uses temporary synthetic records only; always removes them in finally.
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const {createStore}=require('../lib/cleaning-job-store.cjs');
 const {createStore:workspaces}=require('../lib/dashboard-store.cjs');
 const {createStore:guides}=require('../lib/property-guide-store.cjs');
 const {database}=require('../lib/calendar-store.cjs');
-test('Neon: property ownership, persistent jobs/tasks/codes, assignment isolation and immediate guide revocation', {skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: property ownership, persistent jobs/tasks/codes, assignment isolation and immediate guide revocation', {skip:!enabled},async()=>{
  const db=database(),suffix=randomUUID(),owner='test-jobs:'+suffix,other='test-other:'+suffix,cleaner='test-cleaner:'+suffix,second='test-second:'+suffix;
  const propertyId=randomUUID(),foreignProperty=randomUUID(),store=createStore(db);
  const property=id=>({id,name:'Synthetic test property',phone:'+447700900123',notes:'PRIVATE',regular:['Synthetic task'],deep:['Synthetic deep task'],faqs:[],checked:{regular:[],deep:[]}});

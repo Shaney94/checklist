@@ -1,7 +1,8 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),sharp=require('sharp');
 const {database}=require('../lib/calendar-store.cjs'),{createStore:workspaces}=require('../lib/dashboard-store.cjs'),{createStore:jobs}=require('../lib/cleaning-job-store.cjs'),{createStore:assignments}=require('../lib/property-assignment-store.cjs'),{createStore:completion}=require('../lib/completion-store.cjs');
 const {change}=require('../src/server/handlers/dashboard.js'),{templates}=require('../lib/checklist-templates.cjs'),{validatePhoto}=require('../lib/completion.cjs');
-test('Neon: property adoption persists applicability, preserves job/evidence snapshots and supplies new turnovers',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: property adoption persists applicability, preserves job/evidence snapshots and supplies new turnovers',{skip:!enabled},async()=>{
  const db=database(),owner='test-adoption:'+randomUUID(),property=randomUUID(),cleaner={id:'test-cleaner:'+randomUUID(),email:randomUUID()+'@example.test'},host={id:'synthetic-host',workspaceId:owner};
  const w=workspaces(db),j=jobs(db),a=assignments(db),c=completion(db);
  try{

@@ -4,7 +4,7 @@ const jobId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const propertyId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=', 'base64');
 
-test('Cleaner opens next turnover, reads guide, reports an issue and submits locked completion', async ({ page, context, request }, info) => {
+test('Cleaner opens next turnover, reads guide, reports an issue and submits locked completion', { tag: '@critical' }, async ({ page, context, request }, info) => {
   await login(context, request);
   let state = 'scheduled', revision = 1, checked: number[] = [], photos: { id: string; width: number; height: number; size: number }[] = [];
   const job = () => ({ id: jobId, propertyId, propertyName: 'Synthetic property', date: '2026-09-19', kind: 'regular', state, revision, assigned: true, automatic: true, plannedAfter: '10:00:00', hostPhone: '+447700900123', tasks: ['Synthetic cleaning task'], checked, faqs: [] });
@@ -67,7 +67,9 @@ test('Cleaner opens next turnover, reads guide, reports an issue and submits loc
   await issue.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Complete clean', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Can’t make this clean', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Contact host on WhatsApp' })).toHaveAttribute('href', /wa\.me\/447700900123/);
+  await expect(page.getByRole('dialog')).toContainText('This does not cancel the job.');
+  await expect(page.locator('a[href*="wa.me"]')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).not.toContainText('+447700900123');
   await expect(page.getByRole('dialog')).toContainText('This does not cancel the job.');
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Synthetic cleaning task' }).check();
@@ -95,7 +97,7 @@ test('Cleaner opens next turnover, reads guide, reports an issue and submits loc
   await expect(dialog.getByRole('img')).toHaveCount(3);
 });
 
-for (const decision of ['approve', 'issue'] as const) test(`Host can ${decision} pending completion while preserving submitted evidence`, async ({ page, context, request }, info) => {
+for (const decision of ['approve', 'issue'] as const) test(`Host can ${decision} pending completion while preserving submitted evidence`, { tag: '@critical' }, async ({ page, context, request }, info) => {
   const tokens = await (await request.get('http://127.0.0.1:3101/tokens?role=host')).json();
   await context.setExtraHTTPHeaders({ Cookie: '__Host-turnly-session=' + tokens.session + '; __Host-turnly-refresh=' + tokens.refresh });
   let state = 'awaiting_review', revision = 5, reviewNote: string | null = null;
@@ -141,7 +143,7 @@ for (const decision of ['approve', 'issue'] as const) test(`Host can ${decision}
   await page.screenshot({ path: info.outputPath('host-review.png'), fullPage: true });
 });
 
-test('real completion endpoint denies anonymous photo reads and role escalation', async ({ request }) => {
+test('real completion endpoint denies anonymous photo reads and role escalation', { tag: '@critical' }, async ({ request }) => {
   expect((await request.get('/api/completion?jobId=' + jobId + '&photoId=' + propertyId)).status()).toBe(401);
   expect((await request.get('/api/job-issues?jobId=' + jobId + '&photoId=' + propertyId)).status()).toBe(401);
   for (const [role, action] of [['cleaner', 'approve'], ['host', 'upload']]) {

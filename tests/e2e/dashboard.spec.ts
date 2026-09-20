@@ -52,7 +52,7 @@ for (const role of ["host", "cleaner"] as const) test(`${role} calendar keeps co
     .getByRole("button", { name: "+ Add calendar", exact: true })
     .click();
   await page.getByLabel("Calendar/property name").fill("Second property");
-  await page.getByRole("combobox", { name: "Workspace property", exact: true }).selectOption("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  await page.getByRole("combobox", { name: role === "host" ? "Workspace property" : "Customer property", exact: true }).selectOption("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   await page.getByLabel("iCal URL").fill("https://example.com/second.ics");
   await page.getByRole("button", { name: "Connect calendar" }).click();
   await expect(page.locator(".connected-calendar")).toHaveCount(2);

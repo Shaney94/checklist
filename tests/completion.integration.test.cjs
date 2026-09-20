@@ -1,3 +1,4 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const sharp=require('sharp');
 const {database}=require('../lib/calendar-store.cjs');
@@ -5,7 +6,7 @@ const {createStore:workspaceStore}=require('../lib/dashboard-store.cjs');
 const {createStore:jobStore}=require('../lib/cleaning-job-store.cjs');
 const {createStore}=require('../lib/completion-store.cjs');
 const {validatePhoto}=require('../lib/completion.cjs');
-test('Neon: completion requirements, photo isolation, immutable submission, review transitions and concurrent writes',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: completion requirements, photo isolation, immutable submission, review transitions and concurrent writes',{skip:!enabled},async()=>{
  const db=database(),suffix=randomUUID(),owner='test-completion:'+suffix,propertyId=randomUUID(),cleaner={id:'cleaner:'+suffix,workspaceId:'user:synthetic',role:'cleaner'},other={id:'other:'+suffix,workspaceId:owner,role:'cleaner'},host={id:'host:'+suffix,workspaceId:owner,role:'host'},foreign={...host,workspaceId:'foreign:'+suffix};
  const jobs=jobStore(db),store=createStore(db);
  try{

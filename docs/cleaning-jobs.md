@@ -30,7 +30,7 @@ The scripts apply `005-cleaning-jobs.sql` and `006-calendar-properties.sql` atom
 The focused Neon integration test creates synthetic records and removes them in `finally`:
 
 ```sh
-TURNLI_TEST_DATABASE=1 node --env-file=.env.local --test tests/cleaning-jobs.integration.test.cjs
+npm run test:integration -- tests/cleaning-jobs.integration.test.cjs
 ```
 
 Browser tests use synthetic API fixtures; they do not establish production identity-provider configuration. Completion photos and Host review extend these jobs as documented in [clean completion](clean-completion.md). Property invitations are documented separately; teams, notifications and payments remain outside this implementation.

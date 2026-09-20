@@ -1,7 +1,8 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const {database}=require('../lib/calendar-store.cjs'),{createStore:assignments}=require('../lib/property-assignment-store.cjs'),{createStore:jobs}=require('../lib/cleaning-job-store.cjs'),{createStore:completion}=require('../lib/completion-store.cjs');
 const {validatePhoto}=require('../lib/completion.cjs'),sharp=require('sharp');
-test('Neon: email acceptance, property defaults, isolated calendars, evidence and revocation',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: email acceptance, property defaults, isolated calendars, evidence and revocation',{skip:!enabled},async()=>{
  const db=database(),owner='test-assignment:'+randomUUID(),other='test-other:'+randomUUID(),property=randomUUID(),foreign=randomUUID();
  const host={id:'host',workspaceId:owner},cleaner={id:'test-cleaner:'+randomUUID(),email:'synthetic-'+randomUUID()+'@example.test'},outsider={id:'test-cleaner:'+randomUUID(),email:'other-'+randomUUID()+'@example.test'};
  const a=assignments(db),j=jobs(db),c=completion(db);

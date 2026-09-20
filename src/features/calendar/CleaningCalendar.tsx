@@ -10,10 +10,12 @@ export default function CleaningCalendar({
   model: m,
   content,
   readOnly = false,
+  onAddCustomer,
 }: {
   model: CalendarModel;
   content: PrivateContent | null;
   readOnly?: boolean;
+  onAddCustomer?: () => void;
 }) {
   const [manage, setManage] = useState(false),
     [search, setSearch] = useState(""),
@@ -274,6 +276,7 @@ export default function CleaningCalendar({
           calendars={m.calendars}
           open={manage}
           onClose={() => setManage(false)}
+          onAddCustomer={onAddCustomer}
           reload={m.reload}
           refresh={m.refresh}
         />

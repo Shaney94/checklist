@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { login } from '../fixtures/dashboard';
 
-test('host routes use server-assigned roles and shared account controls', async ({ page, context, request }, info) => {
+test('host routes use server-assigned roles and shared account controls', { tag: '@critical' }, async ({ page, context, request }, info) => {
   const tokens = await (await request.get('http://127.0.0.1:3101/tokens?role=host')).json();
   const cookie = '__Host-turnly-session=' + tokens.session + '; __Host-turnly-refresh=' + tokens.refresh;
   await context.setExtraHTTPHeaders({ Cookie: cookie });
@@ -29,7 +29,7 @@ test('host routes use server-assigned roles and shared account controls', async 
   expect(errors).toEqual([]);
 });
 
-test('cleaners, anonymous users and unsupported roles cannot request host pages', async ({ context, request }) => {
+test('cleaners, anonymous users and unsupported roles cannot request host pages', { tag: '@critical' }, async ({ context, request }) => {
   const anonymous = await request.get('/app/host/properties', { maxRedirects: 0 });
   expect(anonymous.status()).toBe(303);
   expect(anonymous.headers().location).toContain('next=%2Fapp%2Fhost%2Fproperties');

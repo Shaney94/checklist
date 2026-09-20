@@ -5,19 +5,25 @@ import Dialog from "../../components/Dialog";
 import Reminder from "../dashboard/Reminder";
 import Account from "../dashboard/Account";
 import Sidebar, { Icon } from "../dashboard/Sidebar";
-import { request, message, whatsapp } from "../dashboard/api";
+import { request, message } from "../dashboard/api";
 import type { User, Kind } from "../dashboard/types";
 import { labels } from "../dashboard/WorkspaceTools";
 import { today } from "../calendar/useCalendar";
 import WorkspaceCalendar from "../calendar/WorkspaceCalendar";
 import StartGuide from "../start-guide/StartGuide";
 import AssignedProperties from "./AssignedProperties";
-import HostProperties from "../host/HostProperties";
+import MyCustomers from "./MyCustomers";
+import { useWorkspace } from "../dashboard/useWorkspace";
+import "./cleaner-ux.css";
 import JobIssues from "./JobIssues";
 import Completion from "./Completion";
 import { stateLabels } from "./types";
 import type { Job, AssignedJob } from "./types";
 export default function CleanerWorkspace({ user }: { user: User }) {
+  const customerModel = useWorkspace();
+  const [addingCustomer, setAddingCustomer] = useState(false);
+  const [customerCalendarVersion, setCustomerCalendarVersion] = useState(0);
+  function openCustomers(adding = false) { setAddingCustomer(adding); setCustomers(true); setMore(false); }
   const [jobs, setJobs] = useState<Job[]>([]), [selected, setSelected] = useState(""), [job, setJob] = useState<AssignedJob | null>(null);
   const [active, setActive] = useState<Kind | "jobs" | "calendar">("calendar"), [status, setStatus] = useState(""), [busy, setBusy] = useState(false);
   const [cant, setCant] = useState(false), [customers, setCustomers] = useState(false);
@@ -71,17 +77,18 @@ export default function CleanerWorkspace({ user }: { user: User }) {
     } catch (e) { setJob(null); setGuide(false); setStatus(message(e)); } finally { setBusy(false); }
   }
   const nextJob = jobs.find(j => j.state === "scheduled");
-  return <div className="wrap">
-    <header className="brand-header"><Image className="brand-mark" src="/icons/turnli.svg" alt="" width={44} height={44} unoptimized /><h1><span className="brand-name">turnli</span> <span className="hub-name">Cleaner Workspace</span></h1><Account user={user} /><button className="nav-item mobile-more" aria-label="More" onClick={() => setMore(true)}><Icon name="more" /></button></header>
+  return <div className="wrap cleaner-workspace">
+    <header className="brand-header"><Image className="brand-mark" src="/icons/turnli.svg" alt="" width={44} height={44} unoptimized /><h1><span className="brand-name">turnli</span> <span className="hub-name">Cleaner Workspace</span></h1><div className="cleaner-header-actions"><Account user={user} /><button className="nav-item mobile-more" aria-label="More" onClick={() => setMore(true)}><Icon name="more" /></button></div></header>
     <div className="workspace-frame">
-      <Sidebar active={active} navigate={navigate} mobile={mobile} toolsTarget={target} onGuide={() => { setMore(false); setGuide(true); }} />
-      <div className="workspace-main">
+      <Sidebar active={active} navigate={navigate} mobile={mobile} toolsTarget={target} onGuide={() => { setMore(false); setGuide(true); }} onCustomers={() => openCustomers()} />
+      <main className="workspace-main">
       <Reminder content={null} visible={active === "jobs" || active === "calendar"} jobs />
       {active === "calendar" && nextJob && <section className="section job-workspace" aria-label="Next clean"><h2>Next clean</h2><p><strong>{nextJob.propertyName}</strong> · <time dateTime={nextJob.date}>{nextJob.date}</time>{nextJob.plannedAfter ? " · Planned after " + nextJob.plannedAfter.slice(0, 5) : ""}</p>{nextJob.automatic && <p>Planned after scheduled checkout. Confirm the property is ready before entering.</p>}<button className="primary" onClick={() => { setSelected(nextJob.id); navigate(nextJob.kind); }}>Open next clean</button></section>}
-      <button className="back" onClick={() => setCustomers(true)}>My customer properties & lists</button>
-      <AssignedProperties userId={user.id} calendarVisible={active === "calendar"} onChanged={() => void load()} ownCalendar={<WorkspaceCalendar />} />
+      {active === "calendar" && customerModel.state.data.properties.length > 0 && <section className="section customer-summary" aria-label="My customers"><div><h2>My customers</h2><p>{customerModel.ready ? customerModel.state.data.properties.length ? `${customerModel.state.data.properties.length} customer propert${customerModel.state.data.properties.length === 1 ? "y" : "ies"} you manage yourself.` : "Manage calendars and lists for your own cleaning customers." : "Loading your customer properties…"}</p></div><button className="back" onClick={() => openCustomers(!customerModel.state.data.properties.length)}>{customerModel.state.data.properties.length ? "Open My customers" : "Add customer property"}</button></section>}
+      {active === "calendar" && status && <p role="status">{status}</p>}
+      <AssignedProperties userId={user.id} calendarVisible={active === "calendar"} onChanged={() => void load()} ownCalendar={<WorkspaceCalendar key={customerCalendarVersion} onAddCustomer={() => openCustomers(true)} />} />
       {active !== "calendar" && <>
-      <main className="section job-workspace">
+      <section className="section job-workspace">
         <h2>{active === "jobs" ? "Your cleaning jobs" : labels[active]}</h2>
         <p role="status">{status}</p>
         <label className="field">Assigned job<select disabled={busy} value={selected} onChange={e => setSelected(e.target.value)}><option value="">Choose a job</option>{jobs.map(j => <option value={j.id} key={j.id}>{j.date} · {j.propertyName} · {j.kind} clean · {stateLabels[j.state]}</option>)}</select></label>
@@ -93,7 +100,7 @@ export default function CleanerWorkspace({ user }: { user: User }) {
             <button className="back" disabled={busy} onClick={() => void generate()}>{hasCode ? "Generate replacement code" : "Generate assignment code"}</button>
             {code && <label className="field">Your assignment code<input readOnly value={code} onFocus={e => e.target.select()} /><span>Copy it now. It is not stored in this browser and cannot be shown again after leaving.</span></label>}
           </details>
-          <p className="calendar-help">Manage your own customer calendars in Calendar. Host-assigned work remains separate.</p>
+          <p className="calendar-help">Use My customers for your own customer properties and calendars. Assigned work stays separate.</p>
         </> : !job ? <p>Choose an assigned job to see its cleaning tasks and guidance.</p> : active === "faqs" ? <>
           {job.faqs.map((f, i) => <details key={i}><summary>{f.question}</summary><p>{f.answer}</p></details>)}{!job.faqs.length && <p>No FAQs have been added.</p>}
         </> : job.kind !== active ? <p>This job is a {job.kind} clean. Choose a job of the selected clean type.</p> : <div id="workspaceContentView">
@@ -109,19 +116,19 @@ export default function CleanerWorkspace({ user }: { user: User }) {
           {job.state === "scheduled" && <button className="back" onClick={() => setCant(true)}>Can’t make this clean</button>}
           <button className="primary" disabled={busy || (job.state === "scheduled" && (!job.tasks.length || job.checked.length !== job.tasks.length))} onClick={() => setCompletionId(job.id)}>{job.state === "scheduled" ? "Complete clean" : "View completion"}</button>
         </div>}
-      </main>
+      </section>
       </>}
-      </div>
+      </main>
     </div>
-    <Dialog id="customerProperties" title="My customer properties & lists" open={customers} onClose={() => setCustomers(false)}>{customers && <HostProperties host={false} />}<button className="back" onClick={() => setCustomers(false)}>Close</button></Dialog>
+    <Dialog id="customerProperties" title="My customers" open={customers} onClose={() => setCustomers(false)}>{customers && <MyCustomers model={customerModel} initiallyAdding={addingCustomer} onCalendarsChanged={() => setCustomerCalendarVersion(v => v + 1)} />}<button className="back" onClick={() => setCustomers(false)}>Close</button></Dialog>
     <Dialog id="mobileToolsDialog" title="Workspace tools" open={more} onClose={() => setMore(false)}><button className="back" onClick={() => setMore(false)}>Close</button><div ref={setTarget} /></Dialog>
     <Dialog id="cantMakeDialog" title="Can’t make this clean?" open={cant} onClose={() => setCant(false)}>
       <p>Please let your host know as soon as possible so they can arrange another cleaner. This does not cancel the job.</p>
-      {job?.hostPhone ? <><a className="primary" target="_blank" rel="noopener noreferrer" href={whatsapp(job.hostPhone, `Hi, I’m unable to make the ${job.kind} clean at ${job.propertyName} scheduled for ${job.date}. Please arrange alternative cover.`)}>Contact host on WhatsApp</a><p>Review the message and press Send in WhatsApp.</p></> : <p>No host contact number is available here. Contact your host directly.</p>}
+      <p>Your assignment remains in place. Arrange alternative cover with your Host using your existing arrangements.</p>
       <button className="back" onClick={() => setCant(false)}>Close</button>
     </Dialog>
     <Dialog id="jobIssuesDialog" title="Clean issues" open={!!issueJobId} onClose={() => setIssueJobId("")}>{issueJobId && <JobIssues key={issueJobId} jobId={issueJobId} onChanged={() => void load()} />}<button className="back" onClick={() => setIssueJobId("")}>Close</button></Dialog>
     <Dialog id="completionDialog" title="Clean completion" open={!!completionId} onClose={() => setCompletionId("")}>{completionId && <Completion key={completionId} jobId={completionId} onChanged={() => void load()} />}<button className="back" onClick={() => setCompletionId("")}>Close</button></Dialog>
-    <Dialog id="startGuideDialog" title="Property Start Guide" open={guide} onClose={() => setGuide(false)}>{guide && (job ? <><h3>{job.propertyName}</h3><StartGuide key={job.id} propertyId={job.propertyId} jobId={job.id} /></> : <p>Choose a verified assigned job to read its Start Guide.</p>)}<button className="back" onClick={() => setGuide(false)}>Close</button></Dialog>
+    <Dialog id="startGuideDialog" title="Property Start Guide" open={guide} onClose={() => setGuide(false)}>{guide && (job ? <><h3>{job.propertyName}</h3><StartGuide key={job.id} propertyId={job.propertyId} jobId={job.id} /></> : <p>Choose an assigned clean, or open a property’s Start Guide from Assigned work in Calendar.</p>)}<button className="back" onClick={() => setGuide(false)}>Close</button></Dialog>
   </div>;
 }

@@ -72,3 +72,9 @@ test('automatic turnovers cannot be detached from their property assignment thro
   assert.equal(r.code,409);assert.match(r.data.error,/property.*assigned Cleaner/);
  }
 });
+
+test('assigned job responses expose operational fields only, never Host contact or authentication identifiers',async()=>{
+ const job={id,propertyId:id,propertyName:'Synthetic property',state:'scheduled',tasks:['Clean kitchen'],checked:[],revision:0,hostPhone:'+447700900000',email:'private@example.test',owner_id:'host-private',cleaner_user_id:'private-cleaner',calendarURL:'https://private.example/feed'};
+ const r=await call(cleaner,{assigned:async(user,jobId)=>{assert.equal(user,cleaner.id);assert.equal(jobId,id);return job}},undefined,{id});
+ assert.equal(r.code,200);assert.deepEqual(r.data,{id,propertyId:id,propertyName:'Synthetic property',state:'scheduled',tasks:['Clean kitchen'],checked:[],revision:0});
+});

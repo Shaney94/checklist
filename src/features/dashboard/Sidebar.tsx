@@ -34,12 +34,13 @@ export function Icon({ name }: { name: keyof typeof paths }) {
     </svg>
   );
 }
-export default function Sidebar({ active, navigate, mobile, toolsTarget, onGuide }: {
+export default function Sidebar({ active, navigate, mobile, toolsTarget, onGuide, onCustomers }: {
   active: Kind | "jobs" | "calendar";
   navigate: (v: Kind | "jobs" | "calendar") => void;
   mobile: boolean;
   toolsTarget: HTMLElement | null;
   onGuide: () => void;
+  onCustomers?: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false),
     [busy, setBusy] = useState(false),
@@ -170,6 +171,7 @@ export default function Sidebar({ active, navigate, mobile, toolsTarget, onGuide
   const secondary = (
     <div className="sidebar-secondary">
       {button("regular", "Cleaning jobs", () => navigate("jobs"), { active: active === "jobs" })}
+      {onCustomers && button("calendar", "My customers", onCustomers)}
       <p className="nav-group-label">Property guidance</p>
       {button("faqs", "Start Guide", onGuide)}
       <p className="sidebar-pref-status" role="status">{status}</p>

@@ -29,7 +29,7 @@ New properties receive generic Regular/Deep cleaning task templates. Existing pr
 ```sh
 node --env-file=.env.local scripts/migrate-property-assignments.cjs
 node --test tests/property-assignments.test.cjs tests/account.test.cjs
-TURNLI_TEST_DATABASE=1 node --env-file=.env.local --test tests/property-assignments.integration.test.cjs tests/cleaning-jobs.integration.test.cjs tests/completion.integration.test.cjs
+npm run test:integration -- tests/property-assignments.integration.test.cjs tests/cleaning-jobs.integration.test.cjs tests/completion.integration.test.cjs
 ```
 
 Migration `008-property-assignments.sql` extends 5A/5B and does not infer assignments or link historical feeds. Neon tests create synthetic records and clean them up. Desktop/mobile browser fixtures cover invitation, secure-link verification, acceptance, read-only calendar/guide, applicable checklists, revocation and Cleaner-owned tools. Real inbox delivery and a real invited-account login remain operational verification, not a claim made by these fixtures.

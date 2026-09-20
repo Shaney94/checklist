@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { login } from '../fixtures/dashboard';
 const propertyId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', assignmentId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', jobId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
-test('Host invites a property Cleaner, adjusts task applicability and revokes access', async ({ page, context, request }, info) => {
+test('Host invites a property Cleaner, adjusts task applicability and revokes access', { tag: '@critical' }, async ({ page, context, request }, info) => {
   const tokens = await (await request.get('http://127.0.0.1:3101/tokens?role=host')).json();
   await context.setExtraHTTPHeaders({ Cookie: '__Host-turnly-session=' + tokens.session + '; __Host-turnly-refresh=' + tokens.refresh });
   let invited = false, revision = 0, excluded: number[] = [];
@@ -28,7 +28,7 @@ test('Host invites a property Cleaner, adjusts task applicability and revokes ac
   await page.screenshot({ path: info.outputPath('host-property-invitation.png'), fullPage: true });
 });
 
-test('Cleaner accepts property invitation and receives calendar, job checklist and guide without adding a feed', async ({ page, context, request }, info) => {
+test('Cleaner accepts property invitation and receives calendar, job checklist and guide without adding a feed', { tag: '@critical' }, async ({ page, context, request }, info) => {
   await login(context, request);
   let state = 'pending', checked: number[] = [], revision = 0;
   const job = () => ({ id: jobId, propertyId, propertyName: 'Host home', date: '2026-09-21', kind: 'regular', state: 'scheduled', assigned: true, revision, tasks: ['Clean kitchen'], checked, faqs: [] });
@@ -65,9 +65,9 @@ test('Cleaner accepts property invitation and receives calendar, job checklist a
   await expect(page.getByText('Synthetic private instructions')).toBeVisible();
   await expect(page.getByRole('dialog').locator('textarea')).toHaveCount(0);
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'My customer calendars', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Add Calendar/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Host-assigned calendar', exact: true }).click();
+  await page.getByRole('region', { name: 'Assigned work', exact: true }).getByRole('button', { name: 'My customers', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Add customer property', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Assigned work', exact: true }).click();
   await page.goto('/app#regular');
   await page.getByRole('checkbox', { name: 'Clean kitchen', exact: true }).check();
   await expect(page.getByRole('button', { name: 'Complete clean', exact: true })).toBeEnabled();
@@ -90,13 +90,13 @@ test('new Cleaner sees helpful first use and safe network errors', async ({ page
   await page.route('**/api/dashboard?*', r => r.fulfill({ json: { sidebarCollapsed: false } }));
   await page.route('**/api/calendar?*', r => r.abort('failed'));
   await page.goto('/app');
-  await expect(page.getByText(/Welcome to Turnli. Add your own customer property/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'My customer properties & lists' })).toBeVisible();
-  await expect(page.locator('#calendarStatus')).toContainText('Check your connection');
+  await expect(page.getByText('No assigned properties yet. Invitations from your Host will appear here.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your calendar' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Calendar empty state' })).toContainText('Check your connection');
   await expect(page.locator('body')).not.toContainText('Failed to fetch');
 });
 
-test('secure invitation link is verified through the existing account endpoint before entering workspace', async ({ page }) => {
+test('secure invitation link is verified through the existing account endpoint before entering workspace', { tag: '@critical' }, async ({ page }) => {
   let verified = false;
   await page.route('**/api/account**', r => {
     if (r.request().method() === 'POST') { expect(r.request().postDataJSON()).toEqual({ action: 'invite-login', token: 'synthetic-link' }); verified = true; return r.fulfill({ json: { user: { role: 'cleaner' } } }); }
@@ -110,7 +110,7 @@ test('secure invitation link is verified through the existing account endpoint b
   expect(verified).toBe(true);
 });
 
-test('real invitation API rejects anonymous and forged role requests before any delivery', async ({ request }) => {
+test('real invitation API rejects anonymous and forged role requests before any delivery', { tag: '@critical' }, async ({ request }) => {
   expect((await request.get('/api/property-assignments')).status()).toBe(401);
   for (const [role, action] of [['cleaner', 'invite'], ['host', 'accept']]) {
     const tokens = await (await request.get('http://127.0.0.1:3101/tokens?role=' + role)).json();

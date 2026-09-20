@@ -38,7 +38,7 @@ This applies `007-clean-completion.sql` atomically. No jobs are automatically co
 
 ```sh
 node --test tests/completion.test.cjs tests/cleaning-jobs.test.cjs
-TURNLI_TEST_DATABASE=1 node --env-file=.env.local --test tests/completion.integration.test.cjs tests/cleaning-jobs.integration.test.cjs
+npm run test:integration -- tests/completion.integration.test.cjs tests/cleaning-jobs.integration.test.cjs
 ```
 
 The opt-in database tests use synthetic data and remove it in `finally`. Browser tests use synthetic API fixtures; real HTTP role rejection is also checked. Corrective submissions, notifications, payments and quality scoring are not implemented.

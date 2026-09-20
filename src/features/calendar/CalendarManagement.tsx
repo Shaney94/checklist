@@ -17,7 +17,11 @@ export default function CalendarManagement({
   onClose,
   reload,
   refresh,
+  propertyContext,
+  onAddCustomer,
 }: {
+  onAddCustomer?: () => void;
+  propertyContext?: { id: string; name: string };
   calendars: Calendar[];
   open: boolean;
   onClose: () => void;
@@ -25,13 +29,13 @@ export default function CalendarManagement({
   refresh: (id?: string) => Promise<string>;
 }) {
   const workspace = useWorkspace();
-  const [propertyId, setPropertyId] = useState(""), [propertyName, setPropertyName] = useState("");
+  const [propertyId, setPropertyId] = useState(propertyContext?.id || ""), [propertyName, setPropertyName] = useState("");
   const [editing, setEditing] = useState<Calendar | null | undefined>(
       calendars.length ? undefined : null,
     ),
     [status, setStatus] = useState(""),
     [busy, setBusy] = useState(false);
-  const [name, setName] = useState(""),
+  const [name, setName] = useState(propertyContext?.name || ""),
     [url, setURL] = useState(""),
     [platform, setPlatform] = useState("Custom iCal"),
     [checkIn, setCheckIn] = useState("15:00"),
@@ -39,8 +43,8 @@ export default function CalendarManagement({
     [enabled, setEnabled] = useState(true);
   function edit(c: Calendar | null) {
     setEditing(c);
-    setPropertyId(c?.propertyId || "");
-    setName(c?.name || "");
+    setPropertyId(propertyContext?.id || c?.propertyId || "");
+    setName(c?.name || propertyContext?.name || "");
     setURL("");
     setPlatform(c?.platform || "Custom iCal");
     setCheckIn(c?.checkIn || "15:00");
@@ -86,7 +90,7 @@ export default function CalendarManagement({
   return (
     <Dialog
       id="calendarsDialog"
-      title="Manage calendars"
+      title={propertyContext || onAddCustomer ? "Customer calendars" : "Manage calendars"}
       open={open}
       onClose={onClose}
     >
@@ -96,7 +100,8 @@ export default function CalendarManagement({
       </p>
       <p role="status">{workspace.status}</p>
       {workspace.conflict && <button className="back" onClick={() => void workspace.load()}>Reload properties</button>}
-      <details><summary>Add a property to this workspace</summary>
+      {!propertyContext && onAddCustomer && <button className="back" onClick={() => { onClose(); onAddCustomer(); }}>Add customer property</button>}
+      {!propertyContext && !onAddCustomer && <details><summary>Add a property to this workspace</summary>
         <form onSubmit={async e => {
           e.preventDefault();
           if (await workspace.save({ action: "property", name: propertyName, phone: "", notes: "" })) setPropertyName("");
@@ -104,7 +109,7 @@ export default function CalendarManagement({
           <label className="field">New property name<input required maxLength={100} value={propertyName} onChange={e => setPropertyName(e.target.value)} /></label>
           <button className="back" disabled={workspace.busy || !workspace.ready}>Create property</button>
         </form>
-      </details>
+      </details>}
       <div id="connectedCalendars">
         {!calendars.length ? (
           <p>No calendars connected yet.</p>
@@ -184,13 +189,13 @@ export default function CalendarManagement({
               {syncDate(editing.lastAttempt)}.
             </p>
           )}
-          <label className="field">Workspace property
+          {propertyContext ? <p><strong>{propertyContext.name}</strong> · My customer property</p> : <><label className="field">{onAddCustomer ? "Customer property" : "Workspace property"}
             <select required={!editing || !!editing.propertyId} value={propertyId} onChange={e => setPropertyId(e.target.value)} disabled={!workspace.ready || workspace.busy}>
               <option value="">{editing && !editing.propertyId ? "Not linked (existing feed)" : "Choose a property"}</option>
               {workspace.state.data.properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </label>
-          <p className="calendar-help">Choose the property this feed belongs to. A calendar link does not grant access to another workspace or its Start Guide.</p>
+          <p className="calendar-help">{onAddCustomer ? "Choose the customer property for this calendar. Assigned work stays separate." : "Choose the property this feed belongs to. A calendar link does not grant access to another workspace or its Start Guide."}</p></>}
           <label className="field">
             Calendar/property name
             <input

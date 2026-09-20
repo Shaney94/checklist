@@ -25,6 +25,7 @@ export function useCalendar(assignmentId?: string) {
     [loaded, setLoaded] = useState(false),
     [status, setStatus] = useState(""),
     [connected, setConnected] = useState(true),
+    [hasCalendar, setHasCalendar] = useState(false),
     [zone, setZone] = useState("Europe/London"),
     [newIDs, setNewIDs] = useState<string[]>([]),
     [copied, setCopied] = useState(false);
@@ -52,6 +53,7 @@ export function useCalendar(assignmentId?: string) {
       }>((assignmentId ? "/api/property-assignments?" : "/api/calendar?") + q);
       if (seq !== sequence.current) return;
       setCalendars(data.calendars || []);
+      setHasCalendar(assignmentId ? data.hasCalendar === true : !!data.calendars?.length);
       setZone(data.timeZone || "Europe/London");
       if (data.calendars.length > 10 && !selected && !explicitAll.current) {
         setSelected(data.calendars[0].id);
@@ -233,6 +235,7 @@ export function useCalendar(assignmentId?: string) {
     loaded,
     status,
     connected,
+    hasCalendar,
     zone,
     newIDs,
     copied,

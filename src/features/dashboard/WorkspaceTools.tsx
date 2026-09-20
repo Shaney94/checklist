@@ -152,7 +152,7 @@ export default function WorkspaceTools({
       {kind !== "faqs" && <>
         <p>{standard ? "Standard" : "Custom / earlier"} {kind === "regular" ? "Regular" : "Deep"} template · {p[kind].length} tasks · {p.notApplicable?.[kind]?.length || 0} not applicable</p>
         {!standard && <button className="back" disabled={m.busy || !canAdopt} onClick={async () => {
-          if (confirm("Adopt the restored standard template? Matching applicability settings are preserved. Existing job checklists and history stay unchanged.") && await m.save({ action: "template", id: p.id, kind })) setEditing(false);
+          if (confirm("Adopt the restored standard template? Matching applicability settings are preserved. Untouched planned jobs will use the updated tasks; started jobs and history stay unchanged.") && await m.save({ action: "template", id: p.id, kind })) setEditing(false);
         }}>Use standard template</button>}
         {!canAdopt && <p>Some not-applicable tasks do not match the standard template. Review those tasks before adopting; your current list and settings are retained.</p>}
       </>}

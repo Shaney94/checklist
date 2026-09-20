@@ -4,7 +4,7 @@ Turnli now runs through Next.js App Router on Vercel. The login, authenticated d
 
 ## Build and test
 
-Use Node 24. Run `npm ci`, `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Use `npm run dev` for development or `npm start` after a production build. The asset preparation step replaces generated `public/` with an explicit asset allowlist; Next builds the routes into `.next/`. `npm run test:e2e` tests a production build with synthetic account responses (install Chromium with `npx playwright install chromium`, or set `PLAYWRIGHT_EXECUTABLE_PATH` to a local Chrome binary). The application requires a Node/Next deployment; GitHub Pages cannot serve it.
+Use Node 24 and `npm ci`. Run `npm run verify` for fast checks and `npm run verify:full` for the database/build/critical-browser checkpoint. See [the testing guide](docs/testing.md) for isolated PostgreSQL setup and focused commands. Use `npm run dev` for development or `npm start` after a production build. The generated `public/` asset allowlist and `.next/` build remain unchanged; GitHub Pages cannot serve the application.
 
 ## Private dashboard source
 
@@ -77,10 +77,4 @@ Sync replaces each successful calendar snapshot atomically, using hashed iCal UI
 
 Feed fetching permits HTTPS with public DNS/IP destinations only, pins the resolved address for the TLS request, revalidates redirects, and bounds time, redirect count and response size. URLs and upstream response details are not logged. Guest names/summary text are excluded from persisted snapshots and API responses. Guest counts are parsed only when supplied in the feed summary/description. Property-rule times apply only to date-only events. Cleaning markers indicate a turnover after checkout; they do not invent a confirmed cleaning duration. Existing host-contact actions apply only to the original property's calendar.
 
-Optional real-database regression test:
-
-```
-node --env-file=.env.local scripts/verify-calendar-persistence.cjs
-```
-
-It creates isolated synthetic test records, tests changed source content through the actual parser/sync/store/API path (including future bookings, duplicates, cancellations, failures, ownership and deletion), then removes only its test records. Ordinary `npm test` uses no network or real customer accounts. Real inbox signup/password verification remains a separate account-holder test.
+Persistence regression tests now run through `npm run test:integration` against an isolated local PostgreSQL service. See [testing](docs/testing.md). Do not use production Neon credentials for verification.

@@ -8,7 +8,7 @@ async function account(page: Page, post: (body: Record<string,string>) => { stat
   });
 }
 
-test('signup enters verification even when code delivery fails, then resends successfully', async ({ page }) => {
+test('signup enters verification even when code delivery fails, then resends successfully', { tag: '@critical' }, async ({ page }) => {
   let attempts = 0;
   const actions: string[] = [];
   await account(page, body => {

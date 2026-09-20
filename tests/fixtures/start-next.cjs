@@ -91,7 +91,7 @@ server.listen(3101, "127.0.0.1", () => {
     {
       stdio: "inherit",
       env: {
-        ...process.env,
+        ...require('./test-environment.cjs').testEnvironment(),
         DESCOPE_PROJECT_ID: "turnli-browser-test",
         DESCOPE_MANAGEMENT_KEY: "",
         DATABASE_URL: "",

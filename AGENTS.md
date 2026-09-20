@@ -48,7 +48,9 @@ Turnli is a cleaning operations platform for short-term rental hosts, property m
 
 - Use the smallest relevant verification scope first.
 - Add or update tests when appropriate for changed behaviour.
-- Prefer focused Vitest tests for logic and component behaviour when configured.
+- Use the existing Node test runner for unit/domain tests; do not add a parallel test stack.
+- Canonical checks: `npm run verify` (fast), `npm run verify:full` (isolated PostgreSQL + critical browsers). See [testing](docs/testing.md) for setup and targeted commands.
+- Never load production/local app credentials for tests; use `npm run test:integration` with the disposable local PostgreSQL service.
 - Use targeted Playwright tests for important user flows and E2E behaviour when configured.
 - Do not run full test/E2E suites unless warranted or targeted verification is insufficient.
 - Run relevant type checks, linting, and builds when configured.

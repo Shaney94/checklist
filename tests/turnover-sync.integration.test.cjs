@@ -1,10 +1,11 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 // Synthetic records only. Exercise actual sync/store/trigger boundaries; no external feeds.
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID,randomBytes}=require('node:crypto');
 process.env.TURNLI_CONTENT_KEY=randomBytes(32).toString('base64');
 const {database,createStore:calendars}=require('../lib/calendar-store.cjs'),{parse,syncOne}=require('../lib/calendar-sync.cjs'),{createStore:assignments}=require('../lib/property-assignment-store.cjs'),{createStore:jobs}=require('../lib/cleaning-job-store.cjs');
 const {change}=require('../src/server/handlers/dashboard.js');
 const feed=(entries)=>'BEGIN:VCALENDAR\r\nVERSION:2.0\r\n'+entries.map(([id,cancelled])=>'BEGIN:VEVENT\r\nUID:'+id+'\r\nDTSTART;VALUE=DATE:20990620\r\nDTEND;VALUE=DATE:20990624\r\n'+(cancelled?'STATUS:CANCELLED\r\n':'')+'END:VEVENT').join('\r\n')+'\r\nEND:VCALENDAR';
-test('Neon: active stays survive revocation/partial sync, confirmed cancellations persist, repeated sync is idempotent',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: active stays survive revocation/partial sync, confirmed cancellations persist, repeated sync is idempotent',{skip:!enabled},async()=>{
  const db=database(),owner='test-sync:'+randomUUID(),host={id:'synthetic-host',workspaceId:owner},cleaner={id:'test-cleaner:'+randomUUID(),email:randomUUID()+'@example.test'},next={id:'test-cleaner:'+randomUUID(),email:randomUUID()+'@example.test'},a=assignments(db),j=jobs(db),c=calendars(db);
  const data=change({properties:[]},{action:'property',name:'Synthetic property',phone:'',notes:''}),property=data.properties[0].id,settings={propertyId:property,name:'Synthetic',url:'https://example.test/synthetic.ics',platform:'Custom iCal',checkIn:'15:00',checkOut:'10:00'};
  let calendar;

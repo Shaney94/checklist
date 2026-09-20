@@ -1,3 +1,4 @@
+if(!require('../tests/fixtures/integration-db.cjs').enabled)throw Error('Use npm run test:integration for isolated calendar verification.');
 // Optional integration test against the configured real database, isolated by a random test owner.
 const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
 const {database,createStore}=require('../lib/calendar-store.cjs');

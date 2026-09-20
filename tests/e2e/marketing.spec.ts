@@ -4,7 +4,7 @@ import { login } from '../fixtures/dashboard';
 const noOverflow = async (page: import('@playwright/test').Page) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 };
-test('public homepage links into shared registration and login without exposing product data', async ({ page }) => {
+test('public homepage links into shared registration and login without exposing product data', { tag: '@critical' }, async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');

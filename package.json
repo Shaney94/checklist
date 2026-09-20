@@ -14,18 +14,24 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.cjs && next build --webpack",
-    "test": "node --test tests/*.test.cjs",
-    "lint": "node scripts/lint.cjs && tsc --noEmit",
+    "test": "npm run test:unit",
+    "lint": "node scripts/lint.cjs",
     "dev": "node scripts/build.cjs && next dev",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:unit": "node scripts/test.cjs unit",
+    "test:integration": "node scripts/test.cjs integration",
+    "test:e2e:critical": "playwright test --grep @critical",
+    "verify": "node scripts/verify.cjs",
+    "verify:full": "node scripts/verify.cjs full"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "pg": "^8.23.0",
     "typescript": "^7.0.2"
   },
   "engines": {

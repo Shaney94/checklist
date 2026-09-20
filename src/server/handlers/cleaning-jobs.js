@@ -17,7 +17,11 @@ function createHandler(authenticate=currentUser,getStore=createStore,eligible=el
   if(req.method==='GET'){
    if(req.query?.id){
     if(!uuid(req.query.id))return res.status(400).json({error:'Invalid job.'});
-    const job=await store.assigned(user.id,req.query.id);return job?res.status(200).json(job):res.status(404).json({error:'Assigned job not found.'});
+    const job=await store.assigned(user.id,req.query.id);
+    if(!job)return res.status(404).json({error:'Assigned job not found.'});
+    // Only operational job fields may cross the Host–Cleaner boundary.
+    const fields=['id','propertyId','propertyName','date','kind','state','automatic','plannedAfter','needsAttention','tasks','checked','revision','faqs'];
+    return res.status(200).json(Object.fromEntries(fields.filter(key=>Object.hasOwn(job,key)).map(key=>[key,job[key]])));
    }
    return res.status(200).json({jobs:await store.list(user,host),...(cleaner?{hasCode:await store.code(user.id)}:{})});
   }

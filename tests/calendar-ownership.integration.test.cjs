@@ -1,3 +1,4 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID,randomBytes}=require('node:crypto');
 const {database,createStore,metadata,unseal}=require('../lib/calendar-store.cjs');
 const {createStore:workspaces}=require('../lib/dashboard-store.cjs');
@@ -7,7 +8,7 @@ const {createHandler:guides}=require('../src/server/handlers/start-guide.js');
 const {managedWorkspace}=require('../lib/authorization.cjs');
 const response=()=>({setHeader(){},status(c){this.code=c;return this},json(d){this.data=d;return this}});
 const request=(body,query={})=>({method:body?'POST':'GET',body,query,headers:{origin:'https://turnli.vercel.app','content-type':'application/json'}});
-test('Neon: owned calendar properties persist, legacy feeds stay unlinked, and calendars never grant Host access',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: owned calendar properties persist, legacy feeds stay unlinked, and calendars never grant Host access',{skip:!enabled},async()=>{
  // Only synthetic rows are encrypted with this process-local test key.
  const originalKey=process.env.TURNLI_CONTENT_KEY;process.env.TURNLI_CONTENT_KEY=randomBytes(32).toString('base64');
  const db=database(),suffix=randomUUID(),hostOwner='test-host:'+suffix;

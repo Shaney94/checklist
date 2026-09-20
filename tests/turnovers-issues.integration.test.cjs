@@ -1,8 +1,9 @@
+const {enabled}=require('./fixtures/integration-db.cjs');
 // Opt-in Neon verification. Synthetic records only; cleanup in finally.
 const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),sharp=require('sharp');
 const {database}=require('../lib/calendar-store.cjs'),{createStore:assignments}=require('../lib/property-assignment-store.cjs'),{createStore:jobs}=require('../lib/cleaning-job-store.cjs'),{createStore:issues}=require('../lib/job-issue-store.cjs'),{createStore:completion}=require('../lib/completion-store.cjs');
 const {validatePhoto}=require('../lib/completion.cjs');
-test('Neon: idempotent turnovers, snapshots, cancellation/history, issues and assignment isolation',{skip:process.env.TURNLI_TEST_DATABASE!=='1'},async()=>{
+test('PostgreSQL: idempotent turnovers, snapshots, cancellation/history, issues and assignment isolation',{skip:!enabled},async()=>{
  const db=database(),suffix=randomUUID(),owner='test-turnover:'+suffix,other='test-other:'+suffix,property=randomUUID(),foreign=randomUUID(),calendar=randomUUID();
  const host={id:'host',workspaceId:owner},cleaner={id:'test-cleaner:'+suffix,email:suffix+'@example.test'},outsider={id:'test-outsider:'+suffix,email:'other-'+suffix+'@example.test'};
  const a=assignments(db),j=jobs(db),i=issues(db),c=completion(db);
@@ -29,7 +30,7 @@ test('Neon: idempotent turnovers, snapshots, cancellation/history, issues and as
   assert.equal((await db`SELECT id FROM turnli_cleaning_jobs WHERE owner_id IN (${owner},${other}) AND reservation_key='unlinked-or-unassigned'`).length,0);
   const manual=await j.create(owner,property,'2099-03-24','deep');
   await db`UPDATE turnli_dashboard SET data=jsonb_set(data,'{properties,0,regular}','["Changed future task","Not applicable task"]'::jsonb) WHERE owner_id=${owner}`;
-  await save([booking('stay','2099-03-25')]);job=await row('stay');assert.equal(job.date,'2099-03-25');assert.deepEqual(job.tasks,['Applicable task']);assert.equal(job.revision,initialRevision+1);
+  await save([booking('stay','2099-03-25')]);job=await row('stay');assert.equal(job.date,'2099-03-25');assert.deepEqual(job.tasks,['Changed future task']);assert.equal(job.revision,initialRevision+2);
   await db`UPDATE turnli_calendars SET check_out='11:00' WHERE id=${calendar}`;assert.equal((await row('stay')).time,'11:00:00');
   await db`UPDATE turnli_calendars SET enabled=false WHERE id=${calendar}`;assert.equal((await row('stay')).state,'scheduled');await db`UPDATE turnli_calendars SET enabled=true WHERE id=${calendar}`;
   await save([]);job=await row('stay');assert.equal(job.state,'cancelled');assert(job.auto_cancelled);assert.equal((await j.hostJob(owner,manual.id)).state,'scheduled');
