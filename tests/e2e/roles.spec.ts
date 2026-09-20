@@ -52,4 +52,7 @@ test('shared login keeps supported host destinations and rejects unsafe destinat
   expect(loginDestination('?next=https://attacker.example', '')).toBe('/app');
   expect(loginDestination('?next=%2Fapp%2Fhost%2Fpayments', '')).toBe('/app');
   expect(loginDestination('', '#regular')).toBe('/app#regular');
+  expect(loginDestination('?next=%2Fquote', '')).toBe('/quote');
+  expect(loginDestination('?next=%2Fquote', '#regular')).toBe('/app#regular');
+  for (const value of ['/quote?next=https://attacker.example', '//attacker.example/quote', '/quote/other']) expect(loginDestination('?next=' + encodeURIComponent(value), '')).toBe('/app');
 });

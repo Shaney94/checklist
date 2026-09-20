@@ -45,4 +45,4 @@ export async function proxy(request: NextRequest) {
     response.headers.append("Set-Cookie", cookie);
   return response;
 }
-export const config = { matcher: ["/", "/login", "/register", "/app/:path*", "/airbnb-cleaning/:path*", "/software/airbnb-cleaning", "/cleaners/airbnb-cleaning-jobs"] };
+export const config = { matcher: ["/", "/quote", "/login", "/register", "/app/:path*", "/airbnb-cleaning/:path*", "/software/airbnb-cleaning", "/cleaners/airbnb-cleaning-jobs"] };

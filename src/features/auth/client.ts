@@ -21,6 +21,7 @@ export async function requestAccount(body: Record<string, string>): Promise<Acco
 export function loginDestination(search: string, hash: string) {
   const value = new URLSearchParams(search).get('next') || '/app';
   if (['#regular', '#deep', '#faq'].includes(hash)) return '/app' + hash;
+  if (value === '/quote') return value;
   return /^\/app(?:\/host(?:\/(?:properties|reservations|cleaning-jobs|cleaning-setup|settings))?)?(?:#[a-z-]+)?$/i.test(value) ? value : '/app';
 }
 export function policyMessage(policy: PasswordPolicy) {

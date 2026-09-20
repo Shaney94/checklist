@@ -18,7 +18,7 @@ export default function Home() {
       <section className="public-container marketing-hero" aria-labelledby="hero-title">
         <div className="hero-copy"><p className="eyebrow">Cleaning without the managing.</p><h1 id="hero-title">Happier stays.<br /><em>Less to do.</em></h1>
           <p className="public-lead">From a booked stay to a reviewed clean. Bring your calendar, Cleaner and every little detail together in Turnli.</p>
-          <div className="public-actions"><a className="public-button" href="/register">Get started <Arrow /></a><a className="public-button button-outline" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a></div>
+          <div className="public-actions"><a className="public-button" href="/register">Get started <Arrow /></a><a className="public-button button-outline" href="/quote">Get your cleaning price <Arrow /></a></div>
           <p className="hero-note">Your properties. Your Cleaner. One clear plan.</p>
         </div>
         <figure className="hero-demo" aria-label="Illustrative planned cleaning job">

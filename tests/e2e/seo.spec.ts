@@ -136,7 +136,8 @@ test('cornerstones support accessible navigation, mobile reflow, reduced motion 
     await page.keyboard.press('Escape'); await expect(menu).toBeFocused();
     await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeHidden();
     await page.locator('.hero-copy .public-button').click();
-    await expect(page).toHaveURL(/\/register$/); await expect(page.getByLabel('Confirm password')).toBeVisible();
+    if (route === '/airbnb-cleaning') { await expect(page).toHaveURL(/\/quote$/); await expect(page.getByLabel('Town, area or postcode')).toBeVisible(); }
+    else { await expect(page).toHaveURL(/\/register$/); await expect(page.getByLabel('Confirm password')).toBeVisible(); }
   }
   expect(errors).toEqual([]);
 });

@@ -95,6 +95,9 @@ server.listen(3101, "127.0.0.1", () => {
         DESCOPE_PROJECT_ID: "turnli-browser-test",
         DESCOPE_MANAGEMENT_KEY: "",
         DATABASE_URL: "",
+        TURNLI_LOCAL_ORIGIN: "http://127.0.0.1:3100",
+        VERCEL: "",
+        VERCEL_ENV: "",
         NODE_OPTIONS:
           "--require " + path.resolve("tests/fixtures/descope-transport.cjs"),
       },

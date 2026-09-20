@@ -44,13 +44,13 @@ test('Glasgow pricing is qualified and the real registration and related-page pa
   await expect(prices.locator('.local-price')).toHaveText(['From £60', 'From £130']);
   for (const text of ['52 m²', '2 bedrooms', '1 bathroom', '38-task', '109-task', '2–2.25 hours', '4–4.5 hours', 'Cleaner supplies and linen/towel wash and dry']) await expect(prices).toContainText(text);
   for (const type of ['flats and apartments', 'houses', 'cottages', 'serviced accommodation']) await expect(page.locator('.hero-copy .public-lead')).toContainText(type);
-  await expect(page.locator('#price-next-step')).toContainText('your price shown before an account is needed');
-  for (const note of ['#price-next-step', '#final-price-note']) await expect(page.locator(note)).toContainText('For now, this button opens registration; it does not calculate a quote');
+  await expect(page.locator('#price-next-step')).toContainText('No account needed until you choose to save and continue');
+  await expect(page.locator('#final-price-note')).toContainText('See your price before creating an account');
   await expect(prices.locator('.local-brief')).toContainText('before creating an account or logging in');
-  await expect(prices.locator('.local-brief')).toContainText('An account will only be needed to save, post or proceed with your requirement.');
+  await expect(prices.locator('.local-brief')).toContainText('An account is only needed to save and continue.');
   await expect(page.locator('main form')).toHaveCount(0);
   await page.getByRole('link', { name: 'Get your cleaning price', exact: true }).first().click();
-  await expect(page).toHaveURL(/\/register$/); await expect(page.getByLabel('Confirm password')).toBeVisible();
+  await expect(page).toHaveURL(/\/quote$/); await expect(page.getByLabel('Town, area or postcode')).toBeVisible();
   await page.goto(path);
   await expect(page.getByRole('link', { name: 'Explore the cleaning software' })).toHaveAttribute('href', '/software/airbnb-cleaning');
   await expect(page.getByRole('link', { name: 'Explore Turnli for Cleaners' })).toHaveAttribute('href', '/cleaners/airbnb-cleaning-jobs/');
