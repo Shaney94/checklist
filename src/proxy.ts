@@ -41,4 +41,4 @@ export async function proxy(request: NextRequest) {
     response.headers.append("Set-Cookie", cookie);
   return response;
 }
-export const config = { matcher: ["/", "/app/:path*"] };
+export const config = { matcher: ["/", "/login", "/register", "/app/:path*"] };

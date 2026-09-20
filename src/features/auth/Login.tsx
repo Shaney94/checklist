@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import Image from 'next/image';
+import Brand from '../marketing/Brand';
 import { AccountError, loginDestination, policyMessage, requestAccount, type PasswordPolicy } from './client';
 
 type Screen = 'password' | 'register' | 'code';
 const defaultPolicy: PasswordPolicy = { minLength: 8 };
 
-export default function Login() {
-  const [screen, setScreen] = useState<Screen>('password');
+export default function Login({ initialScreen = 'password' }: { initialScreen?: 'password' | 'register' }) {
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -125,8 +125,11 @@ export default function Login() {
   }
   const title = screen === 'password' ? 'Welcome back' : screen === 'register' ? 'Create your account' : reset ? 'Set your password' : 'Check your email';
   const description = screen === 'password' ? intro : screen === 'register' ? 'Your properties and cleaning, in one place.' : reset ? 'Verify your email to securely set or reset your password.' : 'Use the newest code in your inbox. Check junk mail too.';
-  return <main>
-    <div className="brand"><Image src="/icons/turnli.svg" alt="" width={44} height={44} unoptimized /><span>turnli</span></div>
+  return <div className="auth-page">
+    <header className="auth-header"><Brand /><a href="/" className="auth-home">Back to home <span aria-hidden="true">↗</span></a></header>
+    <main className="auth-layout">
+    <aside className="auth-story" aria-label="Turnli"><p className="eyebrow">Cleaning without the managing.</p><h2>Less to juggle.<br /><span>More in hand.</span></h2><p>Your properties, your cleaning and the details that matter. Together in one workspace.</p><div className="auth-story-note">From the next planned clean<br />to the final review.</div></aside>
+    <div className="auth-form-wrap">
     <section className="card" aria-labelledby="loginTitle" aria-busy={busy}>
       <h1 id="loginTitle">{title}</h1><p id="loginIntro">{description}</p>
       {hasInvitationLink && <button className="primary" disabled={busy} onClick={() => void run(async () => { await requestAccount({ action: 'invite-login', token: invitationToken.current }); invitationToken.current = ''; setHasInvitationLink(false); location.replace(destination.current); })}>Continue with secure email link</button>}
@@ -158,6 +161,6 @@ export default function Login() {
       </form>}
       {recovery && <div id="registrationRecovery"><button disabled={busy} className="secondary" type="button" id="continueRegistration" onClick={showLogin}>Log in to continue</button></div>}
       <p id="loginStatus" role="status" aria-live="polite">{status}</p>
-    </section><p className="tagline">Cleaning without the managing.</p>
-  </main>;
+    </section><p className="tagline">Your workspace. A clearer way to work.</p></div>
+  </main></div>;
 }

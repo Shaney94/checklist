@@ -19,13 +19,13 @@ test('signup enters verification even when code delivery fails, then resends suc
   });
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByRole('button', { name: 'Create an account', exact: true }).click();
   await page.getByLabel('Email address').fill('synthetic@example.com');
   await page.getByLabel('Password', { exact: true }).fill('Synthetic-test-123!');
   await page.getByLabel('Confirm password').fill('Synthetic-test-123!');
   await page.getByRole('button', { name: 'Create account →', exact: true }).click();
-  await expect(page.getByRole('heading')).toHaveText('Check your email');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check your email');
   await expect(page.getByRole('status')).toContainText('Your account was created');
   await expect(page.getByLabel('Email code')).toBeFocused();
   await page.getByRole('button', { name: 'Resend code', exact: true }).click();
@@ -53,7 +53,7 @@ test('duplicate signup recovers through password verification and retains safe d
   await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
   await page.getByLabel('Password', { exact: true }).fill('Existing-password-123!');
   await page.getByRole('button', { name: 'Log in →', exact: true }).click();
-  await expect(page.getByRole('heading')).toHaveText('Check your email');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check your email');
   await page.getByLabel('Email code').fill('123456');
   await page.getByRole('button', { name: 'Log in →', exact: true }).click();
   await expect(page).toHaveURL('http://127.0.0.1:3100/app');
@@ -62,10 +62,10 @@ test('duplicate signup recovers through password verification and retains safe d
 test('password reset preserves the code and mismatch checks', async ({ page }) => {
   const actions: string[] = [];
   await account(page, body => { actions.push(body.action); return { body: { ok: true } }; });
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByLabel('Email address').fill('synthetic@example.com');
   await page.getByRole('button', { name: 'Forgot password?' }).click();
-  await expect(page.getByRole('heading')).toHaveText('Set your password');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set your password');
   await page.getByLabel('Email code').fill('123456');
   await page.getByLabel('New password', { exact: true }).fill('New-password-123!');
   await page.getByLabel('Confirm password').fill('Different-password-123!');
@@ -85,10 +85,10 @@ test('production Next route denies anonymous dashboard access and retains privac
   expect(app.status()).toBe(303);
   expect(new URL(app.headers()['location'], 'http://127.0.0.1:3100').pathname + new URL(app.headers()['location'], 'http://127.0.0.1:3100').search).toBe('/?next=%2Fapp');
   expect(app.headers()['cache-control']).toContain('no-store');
-  const response = await page.goto('/');
+  const response = await page.goto('/login');
   expect(response?.headers()['content-security-policy']).toContain("'nonce-");
   expect(response?.headers()['x-robots-tag']).toContain('noindex');
-  await expect(page.getByRole('heading')).toHaveText('Welcome back');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome back');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   await page.screenshot({ path: testInfo.outputPath('login.png'), fullPage: true });
 });
