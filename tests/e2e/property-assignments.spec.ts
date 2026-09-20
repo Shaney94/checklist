@@ -118,3 +118,24 @@ test('real invitation API rejects anonymous and forged role requests before any 
     expect((await request.post('/api/property-assignments', { headers, data: { action, id: assignmentId, propertyId, email: 'never-send@example.test', role: 'host' } })).status()).toBe(403);
   }
 });
+
+test('Host adopts restored templates, including an empty list, and sees persisted applicability', async ({ page, context, request }) => {
+  await login(context, request, 'host');
+  const { change } = require('../../src/server/handlers/dashboard.js');
+  const { templates } = require('../../lib/checklist-templates.cjs');
+  let data = { properties: [{ id: propertyId, name: 'Synthetic adoption', phone: '', notes: '', regular: [templates.regular[7]], deep: [], checked: { regular: [], deep: [] }, notApplicable: { regular: [0], deep: [] }, faqs: [] }] }, revision = 0;
+  await page.route('**/api/dashboard', r => { if (r.request().method() === 'POST') { const b = r.request().postDataJSON(); expect(b.revision).toBe(revision++); expect(b.action).toBe('template'); data = change(data, b); } return r.fulfill({ json: { revision, data } }); });
+  await page.route('**/api/property-assignments**', r => r.fulfill({ json: { assignments: [] } }));
+  await page.goto('/app/host/properties');
+  await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
+  await expect(page.getByText('Custom / earlier Regular template · 1 tasks · 1 not applicable', { exact: true })).toBeVisible();
+  page.once('dialog', d => d.accept());await page.getByRole('button', { name: 'Use standard template', exact: true }).click();
+  await expect(page.getByText('Standard Regular template · 38 tasks · 1 not applicable', { exact: true })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Applicable: ' + templates.regular[7], exact: true })).not.toBeChecked();
+  await page.reload();await page.getByRole('button', { name: 'Regular Clean List', exact: true }).click();
+  await expect(page.getByText('Standard Regular template · 38 tasks · 1 not applicable', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Deep Clean List', exact: true }).click();
+  page.once('dialog', d => d.accept());await page.getByRole('button', { name: 'Use standard template', exact: true }).click();
+  await expect(page.getByText('Standard Deep template · 109 tasks · 0 not applicable', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

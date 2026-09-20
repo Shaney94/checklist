@@ -42,5 +42,5 @@ test('standard templates and property applicability preserve task definitions an
  let data=change({properties:[]},{action:'property',name:'Synthetic',phone:'',notes:''});const p=data.properties[0];assert.deepEqual(p.regular,templates.regular);assert.deepEqual(p.deep,templates.deep);
  data=change(data,{action:'applicability',id:p.id,kind:'regular',index:0,applicable:false});assert.deepEqual(data.properties[0].regular,templates.regular);assert.deepEqual(data.properties[0].notApplicable.regular,[0]);
  assert.throws(()=>change(data,{action:'applicability',id:p.id,kind:'regular',index:999,applicable:false}));
- data=change(data,{action:'template',id:p.id,kind:'regular'});assert.deepEqual(data.properties[0].notApplicable.regular,[]);
+ data=change(data,{action:'template',id:p.id,kind:'regular'});assert.deepEqual(data.properties[0].notApplicable.regular,[0]);
 });

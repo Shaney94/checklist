@@ -63,3 +63,12 @@ test('assignment codes are random, hashed at rest and rotated only for the signe
  const a=await store.rotateCode(cleaner.id),b=await store.rotateCode(cleaner.id);assert.match(a,/^[A-Za-z0-9_-]{43}$/);assert.notEqual(a,b);
  assert(calls.every(c=>c.values[0]===cleaner.id&&!c.values.includes(a)&&!c.values.includes(b)));assert.match(calls[0].sql,/ON CONFLICT\(user_id\) DO UPDATE/);
 });
+
+test('automatic turnovers cannot be detached from their property assignment through private job codes',async()=>{
+ const {createHandler}=require('../src/server/handlers/cleaning-jobs.js');
+ for(const action of ['assign','unassign']){
+  const r={setHeader(){},status(code){this.code=code;return this},json(data){this.data=data;return this}};
+  await createHandler(async()=>({id:'host',role:'host',workspaceId:'workspace'}),()=>({hostJob:async()=>({state:'scheduled',revision:0,automatic:true}),cleaner:()=>assert.fail('must not look up codes')}))({method:'POST',headers:{origin:'https://turnli.io','content-type':'application/json'},body:{action,id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',revision:0,code:'a'.repeat(43)}},r);
+  assert.equal(r.code,409);assert.match(r.data.error,/property.*assigned Cleaner/);
+ }
+});

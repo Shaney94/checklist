@@ -1,6 +1,6 @@
 const {can,dashboardPermission,managedWorkspace}=require('../../../lib/authorization.cjs');
 const {createStore:createUIStore}=require('../../../lib/workspace-ui-store.cjs');
-const {templates}=require('../../../lib/checklist-templates.cjs');
+const {templates,adoption}=require('../../../lib/checklist-templates.cjs');
 const {randomUUID}=require('node:crypto');
 const {currentUser,privateHeaders,validOrigin}=require('../../../lib/account.cjs');
 const {createStore}=require('../../../lib/dashboard-store.cjs');
@@ -25,7 +25,7 @@ function change(data,b){
    if(!['regular','deep'].includes(b.kind)||!Number.isInteger(b.index)||b.index<0||b.index>=p[b.kind].length||typeof b.applicable!=='boolean')throw Error('Invalid applicability');
    p.notApplicable||={regular:[],deep:[]};const excluded=new Set(p.notApplicable[b.kind]||[]);b.applicable?excluded.delete(b.index):excluded.add(b.index);p.notApplicable[b.kind]=[...excluded];
   }else if(b.action==='template'){
-   if(!['regular','deep'].includes(b.kind))throw Error('Invalid template');p[b.kind]=[...templates[b.kind]];p.checked[b.kind]=[];p.notApplicable||={regular:[],deep:[]};p.notApplicable[b.kind]=[];
+   if(!['regular','deep'].includes(b.kind))throw Error('Invalid template');const adopted=adoption(p,b.kind);if(!adopted)throw Error('Unmatched applicability');p[b.kind]=adopted.tasks;p.checked[b.kind]=adopted.checked;p.notApplicable||={regular:[],deep:[]};p.notApplicable[b.kind]=adopted.notApplicable;
   }else if(b.action==='content'){
    if(!['regular','deep','faqs'].includes(b.kind)||!Array.isArray(b.items)||b.items.length>200)throw Error('Invalid content');
    if(b.kind==='faqs')p.faqs=b.items.map(f=>({question:text(f.question,300,true),answer:text(f.answer,3000,true)}));
@@ -57,6 +57,7 @@ function createHandler(authenticate=currentUser,getStore=createStore,getUIStore=
   if(b.id&&!saved.data.properties.some(p=>p.id===b.id))return res.status(404).json({error:'Property not found.'});
   if(b.revision!==saved.revision)return res.status(409).json({error:'This workspace changed in another tab. Reload it before saving.'});
   if(b.action==='legacy-progress'&&(!user.legacyAccess||owner!==user.workspaceId))return res.status(403).json({error:'These checklists are not part of this workspace.'});
+  if(b.action==='template'&&['regular','deep'].includes(b.kind)&&saved.data.properties.some(p=>p.id===b.id)&&!adoption(saved.data.properties.find(p=>p.id===b.id),b.kind))return res.status(409).json({error:'Some not-applicable tasks do not match the standard template. Keep this list until those tasks have been reviewed; no settings were changed.'});
   let data;try{data=change(saved.data,b);}catch{return res.status(400).json({error:'Check the property and all required fields, then try again.'});}
   const updated=await store.save(owner,b.revision,data);if(!updated)return res.status(409).json({error:'This workspace changed in another tab. Reload it before saving.'});
   return res.status(200).json(updated);

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import Dialog from "../../components/Dialog";
+import { templates, adoption } from "../../../lib/checklist-templates.cjs";
 import { whatsapp } from "./api";
 import type { Kind, Property } from "./types";
 import type { WorkspaceModel } from "./useWorkspace";
@@ -137,6 +138,8 @@ export default function WorkspaceTools({
     )
       setEditing(false);
   }
+  const standard = kind !== "faqs" && JSON.stringify(p[kind]) === JSON.stringify(templates[kind]);
+  const canAdopt = kind !== "faqs" && !!adoption(p, kind);
   return (
     <section
       id="workspaceContentDialog"
@@ -146,6 +149,13 @@ export default function WorkspaceTools({
         {labels[kind]}
       </h2>
       <p className="calendar-help">{p.name}</p>
+      {kind !== "faqs" && <>
+        <p>{standard ? "Standard" : "Custom / earlier"} {kind === "regular" ? "Regular" : "Deep"} template · {p[kind].length} tasks · {p.notApplicable?.[kind]?.length || 0} not applicable</p>
+        {!standard && <button className="back" disabled={m.busy || !canAdopt} onClick={async () => {
+          if (confirm("Adopt the restored standard template? Matching applicability settings are preserved. Existing job checklists and history stay unchanged.") && await m.save({ action: "template", id: p.id, kind })) setEditing(false);
+        }}>Use standard template</button>}
+        {!canAdopt && <p>Some not-applicable tasks do not match the standard template. Review those tasks before adopting; your current list and settings are retained.</p>}
+      </>}
       {!editing ? (
         <>
           <div id="workspaceContentView">
@@ -189,7 +199,6 @@ export default function WorkspaceTools({
             )}
           </div>
           <div className="dialog-actions">
-            {kind !== "faqs" && <button className="back" disabled={m.busy} onClick={() => { if (confirm("Replace this property list with the standard template? Existing job checklists stay unchanged.")) void m.save({ action: "template", id: p.id, kind }); }}>Use standard template</button>}
             <button className="back" onClick={edit}>
               Edit
             </button>

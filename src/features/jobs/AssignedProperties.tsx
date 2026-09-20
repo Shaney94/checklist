@@ -38,7 +38,7 @@ export default function AssignedProperties({ calendarVisible, onChanged, ownCale
       {!!active.length && <><label className="field">Assigned property<select value={property?.id || ""} onChange={e => { setSelected(e.target.value); setOwn(false); setGuide(false); }}>{active.map(a => <option key={a.id} value={a.id}>{a.propertyName}</option>)}</select></label><button className="back" onClick={() => setGuide(true)}>Read property Start Guide</button>{property && <button className="back" onClick={() => hide([...hidden, property.id])}>Hide this assigned property</button>}</>}
       {!!hidden.length && <button className="back" onClick={() => hide([])}>Show hidden assigned properties</button>}
       {calendarVisible && !!active.length && <div className="dialog-actions"><button className="back" aria-pressed={!own} onClick={() => setOwn(false)}>Host-assigned calendar</button><button className="back" aria-pressed={own} onClick={() => setOwn(true)}>My customer calendars</button></div>}
-      <button className="back" disabled={busy} onClick={() => void load()}>Reload invitations</button>
+      {status && <button className="back" disabled={busy} onClick={() => void load()}>Try again</button>}
     </section>
     {calendarVisible && (property && !own ? <AssignedCalendar key={property.id} id={property.id} /> : ownCalendar)}
     <Dialog id="assignedPropertyGuide" title="Property Start Guide" open={guide && !!property} onClose={() => setGuide(false)}>{guide && property && <StartGuide key={property.id} propertyId={property.propertyId} assignmentId={property.id} />}<button className="back" onClick={() => setGuide(false)}>Close</button></Dialog>
@@ -46,5 +46,5 @@ export default function AssignedProperties({ calendarVisible, onChanged, ownCale
 }
 function AssignedCalendar({ id }: { id: string }) {
   const calendar = useCalendar(id);
-  return <><p>Read-only reservations shared by your Host. Reservation dates do not confirm physical checkout or create cleaning jobs.</p><CleaningCalendar model={calendar} content={null} readOnly /></>;
+  return <><p>Read-only reservations shared by your Host. Turnover cleans are planned from scheduled checkout dates, which do not confirm physical checkout.</p><CleaningCalendar model={calendar} content={null} readOnly /></>;
 }

@@ -41,6 +41,7 @@ function createHandler(authenticate=currentUser,getStore=createStore,eligible=el
   const job=await store.hostJob(user.workspaceId,b.id);
   if(!job)return res.status(404).json({error:'Job not found.'});
   if(job.state!=='scheduled'||job.revision!==b.revision)return res.status(409).json({error:'This job changed or was cancelled. Reload jobs.'});
+  if(job.automatic&&b.action!=='cancel')return res.status(409).json({error:'Turnover jobs use the property’s assigned Cleaner. Manage the property assignment instead.'});
   let result;
   if(b.action==='cancel')result=await store.cancel(user.workspaceId,b.id,b.revision);
   else {
