@@ -6,6 +6,7 @@ body:has(.public-site),body:has(.auth-page){margin:0;background:#fff}
 .public-site :focus-visible,.auth-page :focus-visible{outline:3px solid #087d3e;outline-offset:5px}
 .public-site h1,.public-site h2,.public-site h3,.public-site p{margin:0}
 .public-site h1,.public-site h2,.auth-page h1{font-weight:750;letter-spacing:-.055em;line-height:1.04;text-wrap:balance}
+.public-site h1,.public-site h2{overflow-wrap:anywhere}
 .public-site h1{font-size:clamp(3.5rem,5.8vw,5.3rem)}
 .public-site h2{font-size:clamp(2.3rem,3.9vw,3.55rem)}
 .public-site h3{font-size:1.05rem;line-height:1.35;letter-spacing:-.025em}
@@ -132,7 +133,7 @@ body:has(.public-site),body:has(.auth-page){margin:0;background:#fff}
 .shape-03{height:138px;width:120px;border-radius:18px;transform:translateY(0) rotate(-7deg);gap:10px;background:#fcfaf2;box-shadow:10px 10px 0 #dfdbcb}
 .shape-03 i{height:10px;background:#bfd2b8;border:0;border-radius:3px;grid-column:span 2}
 .use-case-copy{padding:25px;background:#fcfdfb}
-.use-case-copy .eyebrow{font-size:9px;margin-bottom:12px}
+.public-site .use-case-copy .eyebrow{font-size:.75rem;margin-bottom:12px}
 .use-case-copy h3{font-size:20px;margin-bottom:12px;letter-spacing:-.04em}
 .use-case-copy p{font-size:14px;line-height:1.7}
 .final-cta{background:var(--public-forest);color:white;text-align:center;padding-block:85px;position:relative;isolation:isolate;overflow:hidden}

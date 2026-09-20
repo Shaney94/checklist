@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { login } from '../fixtures/dashboard';
 
 const noOverflow = async (page: import('@playwright/test').Page) => {
@@ -37,6 +38,10 @@ test('responsive public and auth layouts, keyboard menu, reduced motion and text
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await noOverflow(page);
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    await noOverflow(page);
+    if (width === 320) await page.screenshot({ path: info.outputPath('home-320-enlarged.png'), fullPage: true });
+    await page.evaluate(() => document.documentElement.style.fontSize = '');
     await page.locator('#operations').scrollIntoViewIfNeeded();
     await expect(page.locator('.operations-panel')).toHaveCSS('opacity', '1');
     expect(await page.locator('.hero-copy h1').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
@@ -82,4 +87,24 @@ test('scroll reveals settle once and the page remains readable without JavaScrip
   await expect(staticPage.locator('#operations-title')).toBeVisible();
   await expect(staticPage.locator('.operations-panel')).toHaveCSS('opacity', '1');
   await context.close();
+});
+
+test('public homepage and authentication retain accessible names and readable audience labels', { tag: '@critical' }, async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const route of ['/', '/login', '/register']) {
+    await page.goto(route);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+    for (const brand of await page.locator('.public-brand').all()) {
+      await expect(brand).toHaveAccessibleName('Turnli home');
+      await expect(brand.locator('img')).toHaveAttribute('alt', '');
+    }
+    if (route === '/') {
+      for (const label of await page.locator('.use-case-copy .eyebrow').all()) {
+        expect(await label.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+    await noOverflow(page);
+  }
 });

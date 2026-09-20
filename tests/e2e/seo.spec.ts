@@ -29,6 +29,9 @@ test('public SEO is server rendered, canonical, crawlable and describes only rea
     await expect(page.getByRole('banner')).toHaveCount(1);
     await expect(page.getByRole('contentinfo')).toHaveCount(1);
     for (const target of routes.slice(1)) await expect(page.locator(`footer a[href="${target}"]`)).toBeVisible();
+    if (route === '/software/airbnb-cleaning') {
+      for (const city of ['glasgow', 'edinburgh', 'london']) await expect(page.locator(`main a[href="/airbnb-cleaning/${city}"]`)).toHaveCount(1);
+    }
     const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').innerText());
     expect(ld['@context']).toBe('https://schema.org');
     expect(await page.locator('script[type="application/ld+json"]').evaluate(el => (el as HTMLScriptElement).nonce)).toBe(response?.headers()['content-security-policy'].match(/'nonce-([^']+)'/)?.[1]);
