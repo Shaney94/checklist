@@ -40,7 +40,7 @@ const server = http.createServer((req, res) => {
   if (req.url.startsWith("/v2/keys/"))
     return res.end(JSON.stringify({ keys: [jwk] }));
   const url = new URL(req.url, "http://127.0.0.1:3101");
-  const testRole = url.searchParams.get("role") || undefined;
+  const testRole = url.searchParams.get("role") || "cleaner";
   let providerRole;
   try {
     const jwt = String(req.headers.authorization).match(/eyJ[\w-]+\.[\w-]+\.[\w-]+/)[0];
@@ -61,7 +61,7 @@ const server = http.createServer((req, res) => {
         email: "fixture@example.com",
         verifiedEmail: true,
         status: "enabled",
-        roleNames: providerRole ? ["turnli-" + providerRole] : [],
+        roleNames: providerRole && providerRole !== "roleless" ? ["turnli-" + providerRole] : [],
       }),
     );
   if (req.url === "/v1/auth/refresh")

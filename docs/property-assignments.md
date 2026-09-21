@@ -14,7 +14,7 @@ Provisioning failures leave the invitation pending with “Account setup incompl
 
 The management key needs user lookup and role-assignment permissions in the relevant scope. Tests use isolated provider fixtures and PostgreSQL, never real invitations or users. Owner email-code requests now sign in only; they no longer bootstrap new accounts.
 
-**Phase 2 prerequisites:** the central roleless Cleaner fallback remains unchanged, including access to the current invitation inbox/UI. Legacy owner-only “customer” invitations still create roleless tenant membership: their intended role needs an explicit product decision. Existing roleless users require a reviewed migration, and interrupted normal registration needs a fail-closed recovery policy. Before removing the fallback, provide a restricted authenticated invitation inbox/acceptance entry for setup-incomplete accounts; do not open operational APIs. No Production users are migrated by this change.
+**Explicit roles:** authenticated accounts without a recognised Turnli role have no operational permissions. They can use restricted invitation onboarding or contact support; registration intent is never inferred from property ownership.
 
 ## Jobs and revocation
 
@@ -43,3 +43,13 @@ npm run test:integration -- tests/property-assignments.integration.test.cjs test
 ```
 
 Migration `008-property-assignments.sql` extends 5A/5B and does not infer assignments or link historical feeds. Neon tests create synthetic records and clean them up. Desktop/mobile browser fixtures cover invitation, secure-link verification, acceptance, read-only calendar/guide, applicable checklists, revocation and Cleaner-owned tools. Real inbox delivery and a real invited-account login remain operational verification, not a claim made by these fixtures.
+
+## Explicit-role authorization
+
+`authorizationState` records the provider's explicit role classification. Central authorization returns no role for roleless, unsupported or conflicting identities, including on existing sessions and refresh. Roleless workspace requests redirect to the private `/app/setup` page; operational APIs remain denied. The setup page provides support guidance, sign-out and retryable pending-invitation acceptance. No registration intent is persisted, so recovery never guesses Host or Cleaner intent.
+
+The onboarding query returns only pending invitation IDs and property labels for the authenticated email. Acceptance uses the existing provider-role verification and SQL assignment checks. Explicit Hosts and unsupported identities cannot use roleless onboarding. Ordinary invitation delivery allows roleless invitees without treating them as authorized Cleaners. Project and tenant role scopes remain distinct.
+
+Legacy owner/customer invitation creation is retired (410 for explicitly authorized owners, 403 otherwise). Existing memberships, invitations and history are preserved. Use explicit registration or Host property invitations instead.
+
+The approved operational-account migration was verified before removing the fallback. No broad migration or property-ownership inference is performed by the application. Ambiguous/disposable accounts remain roleless. No database migration is required. Test fixtures use explicit Cleaner roles for ordinary journeys and separate roleless identities for denial/onboarding coverage; production identities and credentials must not enter fixtures.

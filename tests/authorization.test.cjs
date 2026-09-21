@@ -7,13 +7,13 @@ const {createHandler:bootstrap}=require('../src/server/handlers/bootstrap.js');
 const user=(role='cleaner')=>({id:'one',workspaceId:'user:one',role});
 const response=()=>({setHeader(){},status(code){this.code=code;return this},json(data){this.data=data;return this},end(data){this.data=data;return this}});
 const request=(body,method='POST')=>({method,body,query:{},headers:{origin:'https://turnli.vercel.app','content-type':'application/json'}});
-test('unassigned accounts stay cleaners; explicit roles use only their authenticated scope',()=>{
- assert.equal(resolveRole({}),'cleaner');
- assert.equal(resolveRole({roleNames:['unrelated-provider-role']}),'cleaner');
+test('roleless accounts are denied; explicit roles use only their authenticated scope',()=>{
+ assert.equal(resolveRole({}),null);
+ assert.equal(resolveRole({roleNames:['unrelated-provider-role']}),null);
  assert.equal(resolveRole({roleNames:['turnli-host']}),'host');
- assert.equal(resolveRole({role:'host',customAttributes:{role:'host'}}),'cleaner');
+ assert.equal(resolveRole({role:'host',customAttributes:{role:'host'}}),null);
  const provider={roleNames:['turnli-host'],userTenants:[{tenantId:'other',roleNames:['turnli-host']},{tenantId:'mine',roleNames:[]}]};
- assert.equal(resolveRole(provider,'mine'),'cleaner');
+ assert.equal(resolveRole(provider,'mine'),null);
  assert.equal(resolveRole({...provider,userTenants:[{tenantId:'mine',roleNames:['turnli-host']}]},'mine'),'host');
  assert.equal(accountUser({userId:'new',email:'new@example.com',roleNames:['turnli-host']}).workspaceId,'user:new');
 });

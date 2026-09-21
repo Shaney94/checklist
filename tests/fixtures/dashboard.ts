@@ -7,7 +7,7 @@ import {
 export async function login(
   context: BrowserContext,
   request: APIRequestContext,
-  role?: "host",
+  role: "host" | "cleaner" | "roleless" = "cleaner",
 ) {
   const tokens = await (
     await request.get("http://127.0.0.1:3101/tokens" + (role ? "?role=" + role : ""))

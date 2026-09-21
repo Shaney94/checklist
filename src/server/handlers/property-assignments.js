@@ -22,7 +22,13 @@ function createHandler(authenticate=currentUser,getStore=createStore,deliver=del
  try{
   const user=await authenticate(req,res);if(!user)return res.status(401).json({error:'Please log in.'});
   const host=can(user,'property.invite'),cleaner=can(user,'property.accept');
-  if(!user.id||(!host&&!cleaner))return res.status(403).json({error:'Property assignments are unavailable for this account.'});
+  const onboarding=user.authorizationState==='roleless';
+  if(req.method==='GET'&&req.query?.action==='onboarding'){
+   if(!user.id||(!onboarding&&user.authorizationState!=='cleaner'))return res.status(403).json({error:'Invitation onboarding is unavailable for this account.'});
+   return res.status(200).json({invitations:await getStore().onboarding(user)});
+  }
+  const accepting=onboarding&&req.method==='POST'&&req.body?.action==='accept';
+  if(!user.id||(!host&&!cleaner&&!accepting))return res.status(403).json({error:'Property assignments are unavailable for this account.'});
   const b=req.body||{};
   if(req.method==='POST'&&!(host?['invite','revoke']:['accept','decline']).includes(b.action))return res.status(403).json({error:'You cannot perform this assignment action.'});
   const store=getStore();

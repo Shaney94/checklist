@@ -40,10 +40,10 @@ test('assignment validates code and live provider eligibility, scopes writes, an
  assert.equal((await call(host,store,{action:'assign',id,revision:3,code},undefined,async()=>{throw Error('private identity data')})).code,503);
 });
 test('provider eligibility rejects disabled/unverified/Host/unsupported identities and handles service errors',async()=>{
- const user={userId:cleaner.id,email:'synthetic@example.invalid',verifiedEmail:true,status:'enabled',roleNames:[]};
+ const user={userId:cleaner.id,email:'synthetic@example.invalid',verifiedEmail:true,status:'enabled',roleNames:['turnli-cleaner']};
  const sdk=data=>({management:{user:{loadByUserId:async id=>{assert.equal(id,cleaner.id);return {ok:true,data}}}}});
  assert(await eligibleCleaner(cleaner.id,sdk(user)));
- for(const changed of [{status:'disabled'},{email:''},{verifiedEmail:false},{userId:'different'},{roleNames:['turnli-host']},{roleNames:['turnli-future']}])assert.equal(await eligibleCleaner(cleaner.id,sdk({...user,...changed})),false);
+ for(const changed of [{roleNames:[]},{status:'disabled'},{email:''},{verifiedEmail:false},{userId:'different'},{roleNames:['turnli-host']},{roleNames:['turnli-future']}])assert.equal(await eligibleCleaner(cleaner.id,sdk({...user,...changed})),false);
  await assert.rejects(eligibleCleaner(cleaner.id,{management:{user:{loadByUserId:async()=>({ok:false,code:503})}}}));
 });
 test('Cleaner reads and checks only assignments to their authenticated identity',async()=>{

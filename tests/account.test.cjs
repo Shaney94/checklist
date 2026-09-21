@@ -23,8 +23,14 @@ test('origin allowlist rejects missing, unrelated, lookalike and preview origins
   }
  }finally{if(previous===undefined)delete process.env.VERCEL_URL;else process.env.VERCEL_URL=previous;}
 });
-test('invites grant only this workspace and no admin roles',async()=>{const s=sdk();s.management.user.invite=async(email,options)=>{assert.equal(email,'customer@example.com');assert.equal(options.inviteUrl,'https://turnli.io/?join=1');assert.deepEqual(options.userTenants,[{tenantId:'test-workspace',roleNames:[]}]);assert.equal(options.roles,undefined);return {ok:true}};const r=res();await createHandler(()=>s)(req({action:'invite',email:'Customer@example.com'}),r);assert.deepEqual(r.data,{sent:true});});
-test('failed provider send never claims invitation sent',async()=>{const s=sdk();s.management.user.invite=async()=>({ok:false,code:500});const r=res();await createHandler(()=>s)(req({action:'invite',email:'customer@example.com'}),r);assert(!r.data.sent);});
+test('legacy customer invitations require explicit authorization and are retired without delivery',async()=>{
+ for(const roles of [[],['turnli-host'],['turnli-cleaner'],['turnli-other']]){
+  const s=sdk();s.me=async()=>({ok:true,data:{userId:'owner-id',email:OWNER_EMAIL,verifiedEmail:true,userTenants:[{tenantId:'test-workspace',roleNames:roles}]}});
+  s.management.user.invite=()=>assert.fail('legacy invitations must not send');
+  const r=res();await createHandler(()=>s)(req({action:'invite',email:'customer@example.com'}),r);
+  assert.equal(r.code,roles.length&&roles[0]!=='turnli-other'?410:403);
+ }
+});
 test('password login uses provider and only returns secure cookies, not tokens',async()=>{const s=sdk();s.password={signIn:async()=>({ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}})};const r=res();await createHandler(()=>s)(req({action:'password-login',email:OWNER_EMAIL,password:'test-password'}),r);assert.equal(r.code,200);assert(r.headers['Set-Cookie'].every(v=>v.includes('HttpOnly; Secure; SameSite=Lax')));assert(!JSON.stringify(r.data).includes('refresh'));});
 test('resend rate limit is exposed with a cooldown',async()=>{const s=sdk();s.otp={signIn:{email:async()=>({ok:false,code:429})}};const r=res();await createHandler(()=>s)(req({action:'send-code',email:OWNER_EMAIL}),r);assert.equal(r.code,429);assert.equal(r.data.retryAfter,60);});
 test('password change requires fresh OTP and provider password policy',async()=>{const s=sdk();let order=[];s.otp={verify:{email:async()=>{order.push('verify');return {ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}}}}};s.password={update:async(e,p,t)=>{assert.equal(t,'refresh');order.push('update');return {ok:true}}};const r=res();await createHandler(()=>s)(req({action:'set-password',email:OWNER_EMAIL,code:'123456',password:'ValidTest1!'}),r);assert.deepEqual(order,['verify','update']);assert.equal(r.code,200);});
@@ -42,7 +48,7 @@ test('pending verification cannot change a different account email',async()=>{co
 test('unverified code response never grants dashboard access or reports successful login',async()=>{const s=sdk();s.me=async()=>({ok:true,data:{userId:'new',verifiedEmail:false}});s.otp={verify:{email:async()=>({ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}})}};const r=res();await createHandler(()=>s)(req({action:'verify-code',email:'new@example.com',code:'123456'}),r);assert.equal(r.code,403);assert.equal(r.headers['Set-Cookie'],undefined);});
 test('invitation email link uses Descope verification and existing secure session rules',async()=>{
  const s=sdk('cleaner@example.test',false);s.magicLink={verify:async token=>{assert.equal(token,'synthetic-link');return {ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}}}};
- const r=res();await createHandler(()=>s)(req({action:'invite-login',token:'synthetic-link',role:'host'}),r);assert.equal(r.code,200);assert.equal(r.data.user.role,'cleaner');assert(r.headers['Set-Cookie'].every(v=>v.includes('HttpOnly; Secure; SameSite=Lax')));assert(!JSON.stringify(r.data).includes('synthetic-link'));
+ const r=res();await createHandler(()=>s)(req({action:'invite-login',token:'synthetic-link',role:'host'}),r);assert.equal(r.code,200);assert.equal(r.data.user.role,null);assert.equal(r.data.user.authorizationState,'roleless');assert(r.headers['Set-Cookie'].every(v=>v.includes('HttpOnly; Secure; SameSite=Lax')));assert(!JSON.stringify(r.data).includes('synthetic-link'));
  s.magicLink.verify=async()=>({ok:false});const expired=res();await createHandler(()=>s)(req({action:'invite-login',token:'expired'}),expired);assert.equal(expired.code,400);assert.equal(expired.headers['Set-Cookie'],undefined);
  s.magicLink.verify=async()=>({ok:true,data:{sessionJwt:'session',refreshJwt:'refresh'}});s.me=async()=>({ok:true,data:{userId:'bad',email:'unverified@example.test',verifiedEmail:false}});const unverified=res();await createHandler(()=>s)(req({action:'invite-login',token:'synthetic-link'}),unverified);assert.equal(unverified.code,403);assert.equal(unverified.headers['Set-Cookie'],undefined);
 });
