@@ -17,6 +17,14 @@ test('PostgreSQL: Cleaner property context, all calendars and encrypted code pre
   const job=await j.create(owner,ids[0],'2026-10-01','regular');assert(await j.assigned(cleaner.id,job.id));
   const replacement=await j.rotateCode(cleaner.id);assert.notEqual(replacement,initial.code);assert.equal(await j.cleaner(initial.code),undefined);assert(await j.assigned(cleaner.id,job.id));assert.equal((await a.inbox(cleaner))[0].state,'active');
   await a.revoke(owner,invitation.id);assert.equal((await c.properties(cleaner)).length,1);assert.equal((await a.calendars(cleaner.id,'all')).length,0);assert.equal(await j.assigned(cleaner.id,job.id),undefined);
+  // A scheduled manual assignment also authorises context/guide; history does not.
+  const manual=await j.create(foreign,ids[2],'2026-10-02','regular');
+  assert(await j.assign(foreign,manual.id,0,cleaner.id,replacement));
+  const manualContext=(await c.properties(cleaner)).find(p=>p.id===ids[2]);
+  assert.equal(manualContext.source,'assigned');assert.equal(manualContext.jobId,manual.id);assert.equal(manualContext.assignmentId,null);
+  assert(await j.guide(cleaner.id,manual.id));assert.equal(await j.guide(other.id,manual.id),undefined);
+  await db`UPDATE turnli_cleaning_jobs SET state='awaiting_review' WHERE id=${manual.id}`;
+  assert.equal((await c.properties(cleaner)).some(p=>p.id===ids[2]),false);assert.equal(await j.guide(cleaner.id,manual.id),undefined);
   await db`UPDATE turnli_cleaner_codes SET encrypted_code=NULL WHERE user_id=${cleaner.id}`;assert.deepEqual(await j.ensureCode(cleaner.id),{code:null,legacy:true});assert.equal(await j.cleaner(replacement),cleaner.id);
  }finally{for(const o of [owner,own,foreign])await db`DELETE FROM turnli_dashboard WHERE owner_id=${o}`;await db`DELETE FROM turnli_cleaner_codes WHERE user_id=${cleaner.id} OR user_id=${other.id}`;}
 });

@@ -6,9 +6,9 @@ import { requestAccount } from './client';
 type Invitation = { id: string; propertyName: string };
 export default function AccountSetup() {
   const [items, setItems] = useState<Invitation[]>([]), [status, setStatus] = useState(''), [busy, setBusy] = useState(false), [loaded, setLoaded] = useState(false);
-  const load = useCallback(async () => {
-    setBusy(true);
-    try { const account = await request<{ user: { authorizationState?: string } | null }>('/api/account'); if (['host', 'cleaner'].includes(account.user?.authorizationState || '')) { location.replace('/app'); return; } const data = await request<{ invitations: Invitation[] }>('/api/property-assignments?action=onboarding'); setItems(data.invitations); setLoaded(true); setStatus(''); }
+  const load = useCallback(async (recheck = false) => {
+    setBusy(true); setStatus(recheck ? 'Checking your account setup…' : '');
+    try { const account = await request<{ user: { authorizationState?: string } | null }>('/api/account'); if (['host', 'cleaner'].includes(account.user?.authorizationState || '')) { location.replace('/app'); return; } const data = await request<{ invitations: Invitation[] }>('/api/property-assignments?action=onboarding'); setItems(data.invitations); setLoaded(true); setStatus(recheck ? data.invitations.length ? 'Setup checked. Accept an invitation below to finish Cleaner setup.' : 'Setup checked. Your workspace role is still unconfirmed and there are no pending invitations. Contact Turnli support.' : ''); }
     catch (error) { setStatus(message(error)); }
     finally { setBusy(false); }
   }, []);
@@ -29,7 +29,7 @@ export default function AccountSetup() {
     <p role="status" aria-live="polite">{status}</p>
     {items.map(item => <div key={item.id}><h2>Invitation to clean: {item.propertyName}</h2><button className="public-button" disabled={busy} onClick={() => void accept(item.id)}>Accept invitation</button></div>)}
     {loaded && !items.length && <p>No pending invitations for your signed-in email. Ask your Host to check the invited email address or contact Turnli support.</p>}
-    <button className="public-button" disabled={busy} onClick={() => void load()}>Check setup again</button>{' '}
+    <button className="public-button" disabled={busy} onClick={() => void load(true)}>Check setup again</button>{' '}
     <button className="public-text-link" disabled={busy} onClick={() => void logout()}>Sign out</button>
   </div></main>;
 }

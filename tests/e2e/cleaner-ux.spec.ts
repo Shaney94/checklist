@@ -147,3 +147,20 @@ test('calendar combines assigned and customer stays, filters ownership and survi
  await page.getByLabel('Calendar property').selectOption(propertyId);await expect(page.locator('.stay-bar').filter({hasText:'Customer home'})).toHaveCount(0);
  failOwn=true;await page.reload();await expect(page.locator('.stay-bar').filter({hasText:'Host home'}).first()).toBeVisible();await expect(page.getByRole('region',{name:'Cleaning calendar'})).toContainText('Check your connection');
 });
+
+test('Start Guide explains customer-only context and lists authorised property and job assignments', { tag: '@critical' }, async({page,context,request},info)=>{
+ await login(context,request);await empty(page);
+ const second='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',third='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+ let assigned=false;
+ await page.route('**/api/cleaning-jobs**',r=>r.fulfill({json:{jobs:[],properties:[{id:propertyId,name:'Own customer',source:'customer',regular:[],deep:[]},...(assigned?[{id:second,name:'Shared label',source:'assigned',assignmentId:'assignment',regular:[],deep:[]},{id:third,name:'Shared label',source:'assigned',jobId:'job',regular:[],deep:[]}]:[])]}}));
+ await page.route('**/api/property-assignments?action=guide&id=assignment',r=>r.fulfill({json:{revision:0,guide:{}}}));
+ await page.route('**/api/start-guide?jobId=job',r=>r.fulfill({json:{revision:0,guide:{}}}));
+ const open=async()=>{if(info.project.name==='mobile')await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('button',{name:'Start Guide',exact:true}).click();};
+ await page.goto('/app#regular');await expect(page.getByLabel('Choose property').locator('option')).toHaveCount(2);await open();
+ const dialog=page.getByRole('dialog',{name:'Property Start Guide',exact:true});
+ await expect(dialog).toContainText('No Start Guides available.');await expect(dialog.getByRole('combobox')).toHaveCount(0);
+ assigned=true;await page.reload();await expect(page.getByLabel('Choose property').locator('option')).toHaveCount(4);await open();
+ const select=dialog.getByLabel('Choose property');await expect(select.locator('option')).toHaveText(['Choose a property','Shared label · Property bbbb','Shared label · Property cccc']);
+ await select.selectOption(second);await expect(dialog.getByText('No instructions have been added yet.')).toBeVisible();
+ await select.selectOption(third);await expect(dialog.getByText('No instructions have been added yet.')).toBeVisible();
+});

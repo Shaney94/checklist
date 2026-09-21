@@ -36,6 +36,7 @@ export default function CleanerWorkspace({ user }: { user: User }) {
   const [guide, setGuide] = useState(false);
   const [properties,setProperties]=useState<CleanerProperty[]>([]),[contextStatus,setContextStatus]=useState("");
   const [guideProperty,setGuideProperty]=useState("");
+  const guideProperties=properties.filter(p=>p.source==='assigned');
   const names:Record<string,string>=propertyLabels(properties);
   const propertyName=(p:{propertyId:string;propertyName:string})=>names[p.propertyId]||p.propertyName;
   const [mobile, setMobile] = useState(false), [more, setMore] = useState(false), [target, setTarget] = useState<HTMLDivElement | null>(null);
@@ -123,9 +124,9 @@ export default function CleanerWorkspace({ user }: { user: User }) {
     <Dialog showClose id="jobIssuesDialog" title="Clean issues" open={!!issueJobId} onClose={closeIssues}>{issueJobId && <JobIssues onDirty={setIssueDirty} key={issueJobId} jobId={issueJobId} onChanged={() => void load()} />}</Dialog>
     <Dialog showClose id="completionDialog" title="Clean completion" open={!!completionId} onClose={() => setCompletionId("")}>{completionId && <Completion key={completionId} jobId={completionId} onChanged={() => void load()} />}</Dialog>
     <Dialog showClose id="startGuideDialog" title="Property Start Guide" open={guide} onClose={() => setGuide(false)}>{guide && <>
-      <label className="field">Choose property<select value={guideProperty} onChange={e=>setGuideProperty(e.target.value)}><option value="">Choose a property</option>{properties.filter(p=>p.source==='assigned').map(p=><option key={p.id} value={p.id}>{names[p.id]||p.name}</option>)}</select></label>
-      {properties.filter(p=>p.id===guideProperty&&p.source==='assigned').map(p=><StartGuide key={p.id} propertyId={p.id} assignmentId={p.assignmentId} jobId={p.assignmentId?undefined:p.jobId} />)}
-      {!guideProperty&&<p>Choose an assigned property to read its private operational guidance.</p>}
+      {contextStatus ? <p role="status">{contextStatus}</p> : !guideProperties.length ? <p>No Start Guides available. Private guidance requires an active Host property assignment or a scheduled assigned cleaning job. Properties in My customers do not grant access to a Host’s Start Guide.</p> : <label className="field">Choose property<select value={guideProperty} onChange={e=>setGuideProperty(e.target.value)}><option value="">Choose a property</option>{guideProperties.map(p=><option key={p.id} value={p.id}>{names[p.id]||p.name}</option>)}</select></label>}
+      {guideProperties.filter(p=>p.id===guideProperty).map(p=><StartGuide key={p.id} propertyId={p.id} assignmentId={p.assignmentId} jobId={p.assignmentId?undefined:p.jobId} />)}
+      {!contextStatus&&guideProperties.length>0&&!guideProperties.some(p=>p.id===guideProperty)&&<p>Choose an assigned property to read its private operational guidance.</p>}
       </>}</Dialog>
   </div>;
 }

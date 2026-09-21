@@ -58,3 +58,14 @@ test('post-migration roleless identity is denied all operational handlers before
   const {createHandler}=require('../src/server/handlers/'+name+'.js');const r=res();await createHandler(async()=>strictUser(),()=>assert.fail(name+' accessed persistence'))(req(),r);assert.equal(r.code,403,name);
  }
 });
+
+test('project Cleaner with roleless legacy membership stays setup-only until the effective tenant role is explicit',async()=>{
+ const old=process.env.TURNLI_TENANT_ID;process.env.TURNLI_TENANT_ID='synthetic-legacy-tenant';
+ try{
+  const data={...identity,roleNames:['turnli-cleaner'],userTenants:[{tenantId:'synthetic-legacy-tenant',roleNames:[]}]};
+  const sdk={validateSession:async()=>({token:{roles:['turnli-cleaner']}}),me:async()=>({ok:true,data})};
+  const before=await currentUser(req(),res(),sdk);assert.equal(before.workspaceId,'org:synthetic-legacy-tenant');assert.equal(before.role,null);assert.equal(before.authorizationState,'roleless');assert.equal(can(before,'cleaner.view'),false);assert.equal(workspaceRoute(before,'/app').location,'/app/setup');
+  data.userTenants[0].roleNames=['turnli-cleaner'];
+  const after=await currentUser(req(),res(),sdk);assert.equal(after.workspaceId,before.workspaceId);assert.equal(after.role,'cleaner');assert.equal(workspaceRoute(after,'/app').status,200);assert.equal(can(after,'host.view'),false);
+ }finally{if(old===undefined)delete process.env.TURNLI_TENANT_ID;else process.env.TURNLI_TENANT_ID=old;}
+});

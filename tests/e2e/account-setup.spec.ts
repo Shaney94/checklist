@@ -38,6 +38,7 @@ test('roleless account without invitations gets support and sign-out, never a ro
   await expect(page.getByRole('radio')).toHaveCount(0);
   await page.getByRole('button', { name: 'Check setup again' }).click();
   await expect(page.getByRole('button', { name: 'Check setup again' })).toBeEnabled();
+  await expect(page.getByRole('status')).toContainText('Setup checked. Your workspace role is still unconfirmed');
   await expect(page).toHaveURL(/\/app\/setup$/);
   await context.setExtraHTTPHeaders({});
   await page.getByRole('button', { name: 'Sign out' }).click();
@@ -60,4 +61,14 @@ test('real roleless sessions redirect to setup and deny operational APIs before 
     const invitation = await request.post('/api/account', { headers, data: { action: 'invite', email: 'synthetic@example.test' } });
     expect(invitation.status()).toBe(403);
   }
+});
+
+test('setup recheck reads current explicit authorization and opens the Cleaner workspace', { tag: '@critical' }, async ({ page, context, request }) => {
+  await login(context, request, 'roleless');
+  await page.route('**/api/property-assignments?action=onboarding', r => r.fulfill({ json: { invitations: [] } }));
+  await page.goto('/app/setup');
+  await expect(page.getByText(/No pending invitations for your signed-in email/)).toBeVisible();
+  await login(context, request, 'cleaner');
+  await page.getByRole('button', { name: 'Check setup again' }).click();
+  await expect(page).toHaveURL(/\/app$/);
 });
